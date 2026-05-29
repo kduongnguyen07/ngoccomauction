@@ -111,7 +111,21 @@ export default function AdminDashboard() {
 
         <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100 h-fit">
           <h2 className="text-xl font-bold mb-6 flex items-center gap-2"><Plus size={20} className="text-indigo-600"/> Tạo đợt mới</h2>
-          <form onSubmit={(e) => { e.preventDefault(); handleAction('/api/commissions', 'POST', formData); }} className="space-y-4">
+          <form onSubmit={(e) => { 
+            e.preventDefault(); 
+            let formattedData;
+            try {
+              formattedData = {
+                ...formData,
+                startTime: formData.startTime ? new Date(formData.startTime).toISOString() : '',
+                endTime: formData.endTime ? new Date(formData.endTime).toISOString() : ''
+              };
+            } catch (err) {
+              toast.error("Vui lòng nhập ngày giờ hợp lệ!");
+              return;
+            }
+            handleAction('/api/commissions', 'POST', formattedData); 
+          }} className="space-y-4">
             <Input label="Tên Commission" placeholder="VD: Vẽ Chibi" onChange={e => setFormData({...formData, title: e.target.value})} />
             <Input label="Giai đoạn" placeholder="VD: Batch #1" onChange={e => setFormData({...formData, phase: e.target.value})} />
             <Input label="Giá khởi điểm (VND)" type="number" onChange={e => setFormData({...formData, startPrice: e.target.value})} />
