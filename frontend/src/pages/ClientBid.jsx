@@ -88,7 +88,7 @@ export default function ClientBid() {
 
   // 3. Logic Đồng hồ đếm ngược
   useEffect(() => {
-    if (!commission || !commission.end_time) return;
+    if (!commission || (!commission.end_time && !commission.start_time)) return;
 
     const interval = setInterval(() => {
       if (commission.status === 'closed') {
@@ -98,11 +98,13 @@ export default function ClientBid() {
       }
 
       const accurateNow = new Date(new Date().getTime() - serverTimeOffset);
-      const difference = new Date(commission.end_time) - accurateNow;
+      const targetTime = commission.status === 'upcoming' ? commission.start_time : commission.end_time;
+      const difference = new Date(targetTime) - accurateNow;
       
       if (difference <= 0) {
         setTimeLeft({ d: '00', h: '00', m: '00', s: '00' });
         clearInterval(interval);
+        fetchActiveCom();
       } else {
         const d = Math.floor(difference / (1000 * 60 * 60 * 24));
         const h = Math.floor((difference / (1000 * 60 * 60)) % 24);
@@ -118,7 +120,7 @@ export default function ClientBid() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [commission, serverTimeOffset]);
+  }, [commission, serverTimeOffset, fetchActiveCom]);
 
   // 4. Lắng nghe Socket Realtime cho phiên đấu giá HIỆN TẠI
   useEffect(() => {
@@ -226,6 +228,7 @@ export default function ClientBid() {
   const accurateNowForCheck = new Date(new Date().getTime() - serverTimeOffset);
   const isTimeOut = commission && (new Date(commission.end_time) - accurateNowForCheck <= 0);
   const isClosed = isTimeOut || commission?.status === 'closed';
+  const isUpcoming = commission && commission.status === 'upcoming';
   const topBid = bidHistory[0];
   const isWinner = isClosed && commission && String(commission.winner_bidder_id) === String(bidderId);
 
@@ -288,8 +291,8 @@ export default function ClientBid() {
             {/* Thông tin & Bid Section */}
             <div className="flex-1 flex flex-col justify-center py-4">
               <div className="mb-6">
-                <span className={`inline-block px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider mb-3 ${isClosed ? 'bg-gray-100 text-gray-500' : 'bg-red-50 text-red-700'}`}>
-                  {commission.phase} - {isClosed ? 'Closed' : 'Open'}
+                <span className={`inline-block px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider mb-3 ${isUpcoming ? 'bg-purple-100 text-purple-700 animate-pulse' : isClosed ? 'bg-gray-100 text-gray-500' : 'bg-red-50 text-red-700'}`}>
+                  {commission.phase} - {isUpcoming ? 'Sắp diễn ra' : isClosed ? 'Đã đóng' : 'Đang mở'}
                 </span>
                 <h1 className="text-4xl font-extrabold tracking-tight text-gray-950 mb-6">{commission.title}</h1>
               </div>
@@ -298,7 +301,7 @@ export default function ClientBid() {
               <div className="bg-[#E53E3E] text-white p-6 rounded-3xl mb-8 flex items-center justify-between shadow-xl shadow-red-200">
                 <div className="flex items-center gap-3">
                   <Clock size={28} className="opacity-80"/>
-                  <span className="font-bold text-sm uppercase tracking-widest opacity-80">Kết thúc trong:</span>
+                  <span className="font-bold text-sm uppercase tracking-widest opacity-80">{isUpcoming ? 'Bắt đầu trong:' : 'Kết thúc trong:'}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   {[
@@ -337,7 +340,11 @@ export default function ClientBid() {
               </div>
               
               {/* ACTION AREA */}
-              {!isClosed ? (
+              {isUpcoming ? (
+                <div className="w-full text-center p-6 bg-purple-50 text-purple-700 rounded-2xl border border-purple-100 font-bold text-lg">
+                  ⏰ Phiên đấu giá này chưa diễn ra. Vui lòng chờ đến giờ bắt đầu nhé!
+                </div>
+              ) : !isClosed ? (
                 <div className="w-full space-y-4">
                   <div className="flex gap-3">
                     <div className="relative flex-1">

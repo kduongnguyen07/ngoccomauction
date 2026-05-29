@@ -260,6 +260,17 @@ app.get('/api/commissions/active', async (req, res, next) => {
   let client;
   try {
     client = await pool.connect();
+    
+    // Tự động kích hoạt các đợt đấu giá đã đến giờ bắt đầu
+    const updateRes = await client.query(`
+      UPDATE commissions 
+      SET status = 'active' 
+      WHERE status = 'upcoming' AND start_time <= NOW()
+    `);
+    if (updateRes.rowCount > 0) {
+      notifyAll();
+    }
+
     const ans = await client.query(`
       SELECT
         c.id, c.title, c.phase, c.status, c.current_price,
@@ -268,8 +279,21 @@ app.get('/api/commissions/active', async (req, res, next) => {
           SELECT bidder_id FROM bids WHERE commission_id = c.id ORDER BY created_at DESC LIMIT 1
         ) as winner_bidder_id
       FROM commissions c
-      WHERE (status = 'active') OR (status = 'closed' AND is_paid = FALSE)
-      ORDER BY (CASE WHEN status = 'active' THEN 1 ELSE 2 END) ASC, end_time ASC LIMIT 1
+      WHERE (status = 'active') 
+         OR (status = 'closed' AND is_paid = FALSE) 
+         OR (status = 'upcoming')
+      ORDER BY 
+        (CASE 
+          WHEN status = 'active' THEN 1 
+          WHEN status = 'closed' AND is_paid = FALSE THEN 2 
+          WHEN status = 'upcoming' THEN 3 
+          ELSE 4 
+        END) ASC,
+        (CASE 
+          WHEN status = 'upcoming' THEN start_time 
+          ELSE end_time 
+        END) ASC
+      LIMIT 1
     `);
     if (ans.rows.length === 0) return res.status(404).json({ message: 'Trống' });
     res.json({ ...ans.rows[0], server_now: new Date().toISOString() });
