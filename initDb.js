@@ -1,8 +1,9 @@
 const pool = require('./db');
 
 async function initDb() {
-  const client = await pool.connect();
+  let client;
   try {
+    client = await pool.connect();
     console.log('--- Đang khởi tạo Database chuẩn công nghiệp ---');
     
     await client.query('DROP TABLE IF EXISTS audit_logs CASCADE;');
@@ -70,7 +71,11 @@ async function initDb() {
     `);
 
     console.log('--- Khởi tạo thành công! ---');
-  } catch (e) { console.error(e); }
-  finally { client.release(); process.exit(0); }
+  } catch (e) { 
+    console.error('Lỗi khi kết nối hoặc khởi tạo Database:', e); 
+  } finally { 
+    if (client) client.release(); 
+    process.exit(0); 
+  }
 }
 initDb();
