@@ -387,14 +387,14 @@ export default function ClientBid() {
             <div className="bg-green-50 border-2 border-green-500 p-10 rounded-[2.5rem] mt-6 text-center shadow-xl shadow-green-100">
               <h3 className="text-5xl font-black text-green-700 tracking-tighter mb-4">🎉 CHÚC MỪNG BẠN ĐÃ CHIẾN THẮNG!</h3>
               <p className="text-green-700 font-semibold text-lg mb-8 max-w-xl mx-auto">
-                Chúc mừng bạn đã trúng đấu giá! Vui lòng quét mã QR chuyển khoản bên dưới để thực hiện thanh toán số tiền <span className="font-extrabold text-2xl">{parseFloat(topBid.bid_amount).toLocaleString('vi-VN')} đ</span> trong vòng 24 giờ nhé.
+                Chúc mừng bạn đã trúng đấu giá! Vui lòng quét mã QR chuyển khoản bên dưới để đặt cọc trước 50% số tiền là <span className="font-extrabold text-2xl">{(parseFloat(topBid.bid_amount) / 2).toLocaleString('vi-VN')} đ</span> (tổng giá trị trúng bid là {parseFloat(topBid.bid_amount).toLocaleString('vi-VN')} đ) trong vòng 24 giờ nhé.
               </p>
               
               {/* [FIX #6] Fallback khi VITE_MOMO_PHONE chưa được cấu hình */}
               {MOMO_PHONE_NUMBER ? (
                 <div className="bg-white p-6 rounded-3xl inline-block shadow-lg border border-green-100">
                   <img
-                    src={`https://img.vietqr.io/image/MBBANK-${MOMO_PHONE_NUMBER}-compact2.png?amount=${topBid.bid_amount}&addInfo=Thanh toan Com ${commission.title.replace(/ /g, '%20')}`}
+                    src={`https://img.vietqr.io/image/MBBANK-${MOMO_PHONE_NUMBER}-compact2.png?amount=${topBid.bid_amount / 2}&addInfo=Coc 50% Com ${commission.title.replace(/ /g, '%20')}`}
                     alt="VietQR"
                     className="mx-auto w-64 h-64"
                   />
