@@ -33,7 +33,7 @@ export default function AdminDashboard() {
   const [logs, setLogs] = useState([]);
   const [pending, setPending] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [formData, setFormData] = useState({ title: '', phase: '', startPrice: 0, startTime: '', endTime: '' });
+  const [formData, setFormData] = useState({ title: '', phase: '', startPrice: 0, startTime: '', endTime: '', imageUrl: '' });
 
   const authHeader = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
 
@@ -133,6 +133,7 @@ export default function AdminDashboard() {
               <Input label="Bắt đầu" type="datetime-local" onChange={e => setFormData({...formData, startTime: e.target.value})} />
               <Input label="Kết thúc" type="datetime-local" onChange={e => setFormData({...formData, endTime: e.target.value})} />
             </div>
+            <Input label="Link ảnh minh hoạ (Tùy chọn)" placeholder="VD: https://imgur.com/xyz.png" onChange={e => setFormData({...formData, imageUrl: e.target.value})} />
             <button className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg hover:bg-indigo-700 transition-all mt-2">Kích hoạt ngay</button>
           </form>
         </div>

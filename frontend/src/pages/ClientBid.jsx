@@ -276,8 +276,19 @@ export default function ClientBid() {
           
           <div className="bg-white rounded-[2.5rem] shadow-xl overflow-hidden border border-gray-100 flex flex-col md:flex-row p-5 gap-8">
             {/* Hình ảnh */}
-            <div className="bg-gray-100 rounded-[2rem] md:w-2/5 aspect-square flex items-center justify-center text-gray-300 font-bold italic p-10 border border-gray-100 shadow-inner">
-              <Palette size={64} strokeWidth={1} />
+            <div className="bg-gray-100 rounded-[2rem] md:w-2/5 aspect-square flex items-center justify-center overflow-hidden border border-gray-100 shadow-inner">
+              {commission.image_url ? (
+                <img 
+                  src={commission.image_url} 
+                  alt={commission.title} 
+                  className="w-full h-full object-cover transition-all duration-300 hover:scale-105"
+                />
+              ) : (
+                <div className="flex flex-col items-center gap-2 text-gray-300 font-bold italic p-10">
+                  <Palette size={64} strokeWidth={1} />
+                  <span className="text-[10px] uppercase tracking-wider text-gray-400 font-sans">Chưa có ảnh minh họa</span>
+                </div>
+              )}
             </div>
             
             {/* Thông tin & Bid Section */}

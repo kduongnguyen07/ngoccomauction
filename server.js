@@ -89,6 +89,7 @@ const commissionSchema = Joi.object({
   startPrice: Joi.number().min(0).required(),
   startTime: Joi.string().isoDate().required(),
   endTime: Joi.string().isoDate().required(),
+  imageUrl: Joi.string().max(1000).allow('', null).optional(),
 });
 
 const bidderSchema = Joi.object({
@@ -126,13 +127,13 @@ app.post('/api/commissions', authMiddleware, async (req, res, next) => {
   const { error } = commissionSchema.validate(req.body);
   if (error) return res.status(400).json({ error: error.details[0].message });
 
-  const { title, phase, startPrice, startTime, endTime } = req.body;
+  const { title, phase, startPrice, startTime, endTime, imageUrl } = req.body;
   let client;
   try {
     client = await pool.connect();
     await client.query(
-      'INSERT INTO commissions (title, phase, start_price, current_price, start_time, end_time, status) VALUES ($1, $2, $3, $3, $4, $5, \'upcoming\')',
-      [title, phase, startPrice, startTime, endTime]
+      'INSERT INTO commissions (title, phase, start_price, current_price, start_time, end_time, status, image_url) VALUES ($1, $2, $3, $3, $4, $5, \'upcoming\', $6)',
+      [title, phase, startPrice, startTime, endTime, imageUrl || null]
     );
     notifyAll();
     res.json({ success: true });
@@ -262,7 +263,7 @@ app.get('/api/commissions/active', async (req, res, next) => {
     const ans = await client.query(`
       SELECT
         c.id, c.title, c.phase, c.status, c.current_price,
-        c.start_price, c.start_time, c.end_time, c.is_paid,
+        c.start_price, c.start_time, c.end_time, c.is_paid, c.image_url,
         (
           SELECT bidder_id FROM bids WHERE commission_id = c.id ORDER BY created_at DESC LIMIT 1
         ) as winner_bidder_id

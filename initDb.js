@@ -22,6 +22,7 @@ async function initDb() {
         start_time TIMESTAMP NOT NULL,
         end_time TIMESTAMP NOT NULL,
         is_paid BOOLEAN DEFAULT FALSE,
+        image_url VARCHAR(1000),
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         CONSTRAINT price_check CHECK (current_price >= start_price)
       );
