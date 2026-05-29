@@ -10,7 +10,10 @@ export default function AdminLogin() {
     e.preventDefault();
     setLoading(true);
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const API_URL = (rawApiUrl.startsWith('http://') || rawApiUrl.startsWith('https://')) 
+        ? rawApiUrl 
+        : `https://${rawApiUrl}`;
       const r = await fetch(`${API_URL}/api/admin/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

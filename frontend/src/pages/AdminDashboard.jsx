@@ -7,7 +7,10 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_URL = (rawApiUrl.startsWith('http://') || rawApiUrl.startsWith('https://')) 
+  ? rawApiUrl 
+  : `https://${rawApiUrl}`;
 
 export default function AdminDashboard() {
   const [socket, setSocket] = useState(null);

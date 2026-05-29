@@ -6,7 +6,10 @@ import {
   XCircle, Info, LogOut, User 
 } from 'lucide-react';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_URL = (rawApiUrl.startsWith('http://') || rawApiUrl.startsWith('https://')) 
+  ? rawApiUrl 
+  : `https://${rawApiUrl}`;
 const USD_VND_RATE = import.meta.env.VITE_USD_VND_RATE ? parseInt(import.meta.env.VITE_USD_VND_RATE) : 25000;
 
 // SĐT MOMO NHẬN TIỀN
