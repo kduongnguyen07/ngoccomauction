@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import { io } from 'socket.io-client';
-import heroImg from '../assets/hero.png';
+import previewImg from '../assets/preview.jpeg';
 import { 
   Gavel, Zap, Clock, Palette, CheckCircle2, 
   XCircle, Info, LogOut, User 
@@ -279,7 +279,7 @@ export default function ClientBid() {
             {/* Hình ảnh */}
             <div className="bg-gray-100 rounded-[2rem] md:w-2/5 aspect-square flex items-center justify-center overflow-hidden border border-gray-100 shadow-inner">
               <img 
-                src={heroImg} 
+                src={previewImg} 
                 alt={commission.title} 
                 className="w-full h-full object-cover transition-all duration-300 hover:scale-105"
               />
