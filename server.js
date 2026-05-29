@@ -366,10 +366,23 @@ app.post('/api/admin/login', (req, res) => {
   res.status(401).json({ error: 'Wrong password' });
 });
 
+// --- DIAGNOSTIC ENDPOINT ---
+app.get('/api/diag', (req, res) => {
+  res.json({
+    hasDbUrl: !!process.env.DATABASE_URL,
+    hasJwtSecret: !!process.env.JWT_SECRET,
+    jwtSecretLength: process.env.JWT_SECRET?.length || 0,
+    hasAdminPass: !!process.env.ADMIN_PASSWORD,
+    adminPassLength: process.env.ADMIN_PASSWORD?.length || 0,
+    frontendUrl: process.env.FRONTEND_URL,
+    nodeEnv: process.env.NODE_ENV
+  });
+});
+
 // --- GLOBAL ERROR HANDLER ---
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
-  res.status(500).json({ error: 'Internal server error' });
+  res.status(500).json({ error: 'Internal server error: ' + err.message });
 });
 
 server.listen(5000, () => console.log('Server on 5000'));
