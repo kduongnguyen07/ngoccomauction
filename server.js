@@ -25,17 +25,20 @@ const server = http.createServer(app);
 // Constants
 const AUTO_BUY_PRICE = 40;
 
+const rawFrontend = process.env.FRONTEND_URL || 'http://localhost:5173';
+const FRONTEND_URL = rawFrontend.endsWith('/') ? rawFrontend.slice(0, -1) : rawFrontend;
+
 // Setup Socket.io with restricted CORS
 const io = new Server(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: FRONTEND_URL,
     methods: ['GET', 'POST']
   }
 });
 
 // Configure Express CORS
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: FRONTEND_URL,
   optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
