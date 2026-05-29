@@ -10,7 +10,9 @@ const rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const API_URL = (rawApiUrl.startsWith('http://') || rawApiUrl.startsWith('https://')) 
   ? rawApiUrl 
   : `https://${rawApiUrl}`;
-const USD_VND_RATE = import.meta.env.VITE_USD_VND_RATE ? parseInt(import.meta.env.VITE_USD_VND_RATE) : 25000;
+
+const MIN_INCREASE = import.meta.env.VITE_MIN_INCREASE ? parseInt(import.meta.env.VITE_MIN_INCREASE) : 20000;
+const AUTO_BUY_PRICE = import.meta.env.VITE_AUTO_BUY_PRICE ? parseInt(import.meta.env.VITE_AUTO_BUY_PRICE) : 1000000;
 
 // SĐT MOMO NHẬN TIỀN
 const MOMO_PHONE_NUMBER = import.meta.env.VITE_MOMO_PHONE; 
@@ -47,7 +49,7 @@ export default function ClientBid() {
         const ans = await raw.json();
         setCommission(ans);
         setCurrentPrice(ans.current_price);
-        setCustomBid(parseFloat(ans.current_price) + 2);
+        setCustomBid(parseFloat(ans.current_price) + MIN_INCREASE);
         
         const offset = new Date() - new Date(ans.server_now);
         setServerTimeOffset(offset);
@@ -126,7 +128,7 @@ export default function ClientBid() {
       // [FIX #7] Dùng !== undefined thay vì if(data.currentPrice) — tránh bỏ qua giá = 0
       if (data.currentPrice !== undefined) {
         setCurrentPrice(data.currentPrice);
-        setCustomBid(parseFloat(data.currentPrice) + 2);
+        setCustomBid(parseFloat(data.currentPrice) + MIN_INCREASE);
       }
       if (data.status) setCommission(prev => ({ ...prev, status: data.status }));
       
@@ -185,12 +187,12 @@ export default function ClientBid() {
     const parsed = parseFloat(amount);
     if (!isAutoBuy) {
       if (isNaN(parsed) || parsed <= 0) {
-        toast.error('Giá bid không hợp lệ!');
+        toast.error('Giá trị đặt đấu giá không hợp lệ!');
         return;
       }
-      const minBid = parseFloat(currentPrice) + 2;
+      const minBid = parseFloat(currentPrice) + MIN_INCREASE;
       if (parsed < minBid) {
-        toast.error(`Bid tối thiểu phải là $${minBid.toFixed(0)}!`);
+        toast.error(`Mức đấu giá tối thiểu là ${minBid.toLocaleString('vi-VN')} đ!`);
         return;
       }
     }
@@ -312,10 +314,10 @@ export default function ClientBid() {
               {/* GIÁ HIỆN TẠI */}
               <div className="flex items-center justify-between mb-8 p-6 bg-gray-50 rounded-2xl border border-gray-100">
                 <div>
-                  <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-1">Current Bid</p>
-                  <h2 className="text-6xl font-black text-gray-950 tracking-tighter flex items-start">
-                    <span className="text-3xl text-gray-400 mt-2 mr-1">$</span>
-                    {currentPrice}
+                  <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-1">Giá hiện tại</p>
+                  <h2 className="text-6xl font-black text-gray-950 tracking-tighter flex items-baseline">
+                    {parseFloat(currentPrice).toLocaleString('vi-VN')}
+                    <span className="text-2xl text-gray-400 ml-1 font-bold">đ</span>
                   </h2>
                 </div>
                 {topBid && (
@@ -334,7 +336,7 @@ export default function ClientBid() {
                 <div className="w-full space-y-4">
                   <div className="flex gap-3">
                     <div className="relative flex-1">
-                      <span className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500 font-bold text-lg">$</span>
+                      <span className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500 font-bold text-lg">đ</span>
                       <input 
                         type="number" 
                         value={customBid}
@@ -347,22 +349,22 @@ export default function ClientBid() {
                       disabled={isBidding}
                       className="flex-[1.5] bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black text-lg transition-all shadow-lg shadow-red-100 active:scale-95 disabled:opacity-50" 
                     >
-                      {isBidding ? 'Processing...' : `Place a Bid (MI: $2)`}
+                      {isBidding ? 'Đang xử lý...' : `Đấu giá (Tăng tối thiểu: ${MIN_INCREASE.toLocaleString('vi-VN')} đ)`}
                     </button>
                   </div>
 
                   <div className="relative flex py-2 items-center">
                     <div className="flex-grow border-t border-gray-200"></div>
-                    <span className="flex-shrink-0 mx-4 text-gray-400 text-sm font-bold uppercase tracking-widest">Or</span>
+                    <span className="flex-shrink-0 mx-4 text-gray-400 text-sm font-bold uppercase tracking-widest">Hoặc</span>
                     <div className="flex-grow border-t border-gray-200"></div>
                   </div>
 
                   <button 
-                    onClick={() => executeBid(40, true)} 
-                    disabled={isBidding || currentPrice >= 40}
+                    onClick={() => executeBid(AUTO_BUY_PRICE, true)} 
+                    disabled={isBidding || currentPrice >= AUTO_BUY_PRICE}
                     className="w-full py-5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-2xl font-black text-xl transition-all active:scale-95 disabled:opacity-50" 
                   >
-                    AUTO BUY $40
+                    MUA NGAY (AB) {AUTO_BUY_PRICE.toLocaleString('vi-VN')} đ
                   </button>
                 </div>
               ) : (
@@ -378,17 +380,17 @@ export default function ClientBid() {
           {/* GIAO DIỆN DÀNH RIÊNG CHO THẰNG TRÚNG THẦU */}
           {isWinner && topBid && (
             <div className="bg-green-50 border-2 border-green-500 p-10 rounded-[2.5rem] mt-6 text-center shadow-xl shadow-green-100">
-              <h3 className="text-5xl font-black text-green-700 tracking-tighter mb-4">🎉 YOU WON THE AUCTION!</h3>
+              <h3 className="text-5xl font-black text-green-700 tracking-tighter mb-4">🎉 CHÚC MỪNG BẠN ĐÃ CHIẾN THẮNG!</h3>
               <p className="text-green-700 font-semibold text-lg mb-8 max-w-xl mx-auto">
-                Chúc mừng mày đã trúng Com! Vui lòng quét mã MOMO bên dưới để thanh toán số tiền <span className="font-extrabold text-2xl">${topBid.bid_amount}</span> trong vòng 24h nhé.
+                Chúc mừng bạn đã trúng đấu giá! Vui lòng quét mã QR chuyển khoản bên dưới để thực hiện thanh toán số tiền <span className="font-extrabold text-2xl">{parseFloat(topBid.bid_amount).toLocaleString('vi-VN')} đ</span> trong vòng 24 giờ nhé.
               </p>
               
               {/* [FIX #6] Fallback khi VITE_MOMO_PHONE chưa được cấu hình */}
               {MOMO_PHONE_NUMBER ? (
                 <div className="bg-white p-6 rounded-3xl inline-block shadow-lg border border-green-100">
                   <img
-                    src={`https://img.vietqr.io/image/MBBANK-${MOMO_PHONE_NUMBER}-compact2.png?amount=${topBid.bid_amount * USD_VND_RATE}&addInfo=Thanh toan Com ${commission.title.replace(/ /g, '%20')}`}
-                    alt="Momo QR"
+                    src={`https://img.vietqr.io/image/MBBANK-${MOMO_PHONE_NUMBER}-compact2.png?amount=${topBid.bid_amount}&addInfo=Thanh toan Com ${commission.title.replace(/ /g, '%20')}`}
+                    alt="VietQR"
                     className="mx-auto w-64 h-64"
                   />
                 </div>
@@ -398,22 +400,22 @@ export default function ClientBid() {
                 </div>
               )}
               <p className="text-sm text-gray-500 mt-6 italic flex items-center justify-center gap-2">
-                <Info size={16}/> Tỷ giá tạm tính: {USD_VND_RATE.toLocaleString('vi-VN')} VNĐ / 1 USD
+                {/* Tỷ giá quy đổi không cần thiết nữa vì đã dùng VND trực tiếp */}
               </p>
             </div>
           )}
 
           {/* RULES / TOS */}
           <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
-            <h3 className="text-xl font-bold text-gray-950 mb-6 pb-4 border-b border-gray-50 flex items-center gap-2"><Zap size={20} className="text-red-500"/> Auction Rules & Terms of Service</h3>
+            <h3 className="text-xl font-bold text-gray-950 mb-6 pb-4 border-b border-gray-50 flex items-center gap-2"><Zap size={20} className="text-red-500"/> Quy định & Hướng dẫn Đấu giá</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-5 text-gray-700 font-medium text-sm">
               {[
-                {icon: <Gavel size={16}/>, label: 'SB:', val: '$0 (Starting Bid)'},
-                {icon: <Zap size={16}/>, label: 'MI:', val: '$2 (Minimum Increase)'},
-                {icon: <Palette size={16}/>, label: 'AB:', val: '$40 (Auto Buy - Instant Win)'},
-                {icon: <Clock size={16}/>, label: 'Payment:', val: 'Within 24h after winning'},
-                {icon: <XCircle size={16}/>, label: 'Cancel:', val: 'No refund / cancel bid'},
-                {icon: <Info size={16}/>, label: 'Usage:', val: 'Personal use only (Commercial fee extra)'},
+                {icon: <Gavel size={16}/>, label: 'SB:', val: 'Theo cài đặt (Giá khởi điểm)'},
+                {icon: <Zap size={16}/>, label: 'MI:', val: `${MIN_INCREASE.toLocaleString('vi-VN')} đ (Bước giá tối thiểu)`},
+                {icon: <Palette size={16}/>, label: 'AB:', val: `${AUTO_BUY_PRICE.toLocaleString('vi-VN')} đ (Giá mua đứt - Thắng ngay)`},
+                {icon: <Clock size={16}/>, label: 'Thanh toán:', val: 'Trong vòng 24h kể từ khi phiên đấu kết thúc'},
+                {icon: <XCircle size={16}/>, label: 'Huỷ lượt:', val: 'Nghiêm cấm tự ý huỷ lượt đấu giá / bùng cọc'},
+                {icon: <Info size={16}/>, label: 'Sử dụng:', val: 'Mục đích cá nhân (Thương mại sẽ tính phí riêng)'},
               ].map(item => (
                 <div key={item.label} className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl border border-gray-100">
                   <div className="text-red-500">{item.icon}</div>
@@ -429,7 +431,7 @@ export default function ClientBid() {
         <div className="bg-white p-8 rounded-[2.5rem] shadow-lg border border-gray-100 h-fit sticky top-28">
           <h3 className="text-lg font-bold text-gray-950 mb-8 flex items-center gap-2">
             <Zap size={20} className="text-red-500 animate-pulse"/>
-            Live Bid History
+            Lịch sử đấu giá trực tiếp
           </h3>
           <div className="space-y-5">
             {bidHistory.map((bid, index) => {
@@ -449,7 +451,7 @@ export default function ClientBid() {
                   </div>
                   <div className="text-right">
                     <div className={`text-2xl font-black tracking-tighter ${isABWinner ? 'text-red-500' : index === 0 && !isClosed ? 'text-red-600' : 'text-gray-950'}`}>
-                      ${bid.bid_amount}
+                      {parseFloat(bid.bid_amount).toLocaleString('vi-VN')} đ
                     </div>
                     {isABWinner && <span className="inline-block text-[9px] font-black uppercase tracking-widest bg-red-600 text-white px-2 py-0.5 rounded-full -mt-1">Winner</span>}
                   </div>

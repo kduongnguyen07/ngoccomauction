@@ -23,7 +23,8 @@ const app = express();
 const server = http.createServer(app);
 
 // Constants
-const AUTO_BUY_PRICE = 40;
+const AUTO_BUY_PRICE = parseFloat(process.env.AUTO_BUY_PRICE) || 1000000;
+const MIN_INCREASE = parseFloat(process.env.MIN_INCREASE) || 20000;
 
 const rawFrontend = process.env.FRONTEND_URL || 'http://localhost:5173';
 const FRONTEND_URL = rawFrontend.endsWith('/') ? rawFrontend.slice(0, -1) : rawFrontend;
@@ -225,7 +226,7 @@ app.put('/api/commissions/:id/disqualify', authMiddleware, async (req, res, next
     // Log audit event
     await client.query('INSERT INTO audit_logs (action, details) VALUES ($1, $2)', [
       'DISQUALIFY',
-      JSON.stringify({ commission_id: id, winner_name: bidderName, message: `Trảm bidder ${bidderName} tại Commission #${id}` })
+      JSON.stringify({ commission_id: id, winner_name: bidderName, message: `Hủy lượt đấu giá của bidder ${bidderName} tại Commission #${id}` })
     ]);
     
     await client.query('COMMIT');
@@ -334,8 +335,8 @@ app.post('/api/bid', bidLimiter, bidderAuthMiddleware, async (req, res, next) =>
       if (parseFloat(com.current_price) >= AUTO_BUY_PRICE) throw new Error('Auto-buy unavailable');
       newStatus = 'closed';
     } else {
-      if (amount < parseFloat(com.current_price) + 2) {
-        throw new Error('Bid tối thiểu phải cao hơn giá hiện tại $2!');
+      if (amount < parseFloat(com.current_price) + MIN_INCREASE) {
+        throw new Error(`Bid tối thiểu phải cao hơn giá hiện tại ${MIN_INCREASE.toLocaleString('vi-VN')} đ!`);
       }
       if (amount >= AUTO_BUY_PRICE) newStatus = 'closed';
     }

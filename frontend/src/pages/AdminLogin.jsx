@@ -26,7 +26,7 @@ export default function AdminLogin() {
         localStorage.setItem('adminToken', ans.token);
         navigate('/admin'); // Chuyển cảnh
       } else {
-        alert(ans.error || "Sai mật khẩu rồi mày ơi!");
+        alert(ans.error || "Mật khẩu không chính xác. Vui lòng nhập lại!");
       }
     } catch (err) {
       console.error("Lỗi kết nối:", err);
@@ -41,7 +41,7 @@ export default function AdminLogin() {
       <form onSubmit={handleLogin} className="bg-white p-10 rounded-[2.5rem] shadow-2xl w-full max-w-sm space-y-6 border-4 border-indigo-500">
         <div className="text-center">
           <h1 className="text-3xl font-black tracking-tighter text-gray-900">ADMIN LOGIN</h1>
-          <p className="text-gray-400 text-xs font-bold mt-2 uppercase">Nhập mật khẩu để truy cập quyền lực</p>
+          <p className="text-gray-400 text-xs font-bold mt-2 uppercase">Vui lòng nhập mật khẩu để quản trị hệ thống</p>
         </div>
         <input 
           type="password" 
@@ -54,7 +54,7 @@ export default function AdminLogin() {
           disabled={loading}
           className={`w-full py-4 rounded-2xl font-black shadow-lg transition-all ${loading ? 'bg-gray-400' : 'bg-indigo-600 hover:bg-indigo-700 text-white'}`}
         >
-          {loading ? 'ĐANG KIỂM TRA...' : 'XÁC NHẬN TRUY CẬP'}
+          {loading ? 'ĐANG KIỂM TRA...' : 'ĐĂNG NHẬP'}
         </button>
       </form>
     </div>

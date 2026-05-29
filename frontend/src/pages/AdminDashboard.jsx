@@ -114,7 +114,7 @@ export default function AdminDashboard() {
           <form onSubmit={(e) => { e.preventDefault(); handleAction('/api/commissions', 'POST', formData); }} className="space-y-4">
             <Input label="Tên Commission" placeholder="VD: Vẽ Chibi" onChange={e => setFormData({...formData, title: e.target.value})} />
             <Input label="Giai đoạn" placeholder="VD: Batch #1" onChange={e => setFormData({...formData, phase: e.target.value})} />
-            <Input label="Giá khởi điểm ($)" type="number" onChange={e => setFormData({...formData, startPrice: e.target.value})} />
+            <Input label="Giá khởi điểm (VND)" type="number" onChange={e => setFormData({...formData, startPrice: e.target.value})} />
             <div className="grid grid-cols-2 gap-4">
               <Input label="Bắt đầu" type="datetime-local" onChange={e => setFormData({...formData, startTime: e.target.value})} />
               <Input label="Kết thúc" type="datetime-local" onChange={e => setFormData({...formData, endTime: e.target.value})} />
@@ -235,7 +235,7 @@ function CommissionTable({ data, handleAction, pending }) {
             <tr key={c.id} className={`hover:bg-gray-50/50 transition-colors ${isPending ? 'bg-purple-50/50' : ''}`}>
               <td className="px-8 py-6">
                 <div className="font-bold text-gray-900 text-lg">{c.title}</div>
-                <div className="text-indigo-600 font-black text-xl tracking-tighter">${c.current_price}</div>
+                <div className="text-indigo-600 font-black text-xl tracking-tighter">{parseFloat(c.current_price).toLocaleString('vi-VN')} đ</div>
               </td>
               <td className="px-8 py-6">
                 {c.winner_name ? (
@@ -257,7 +257,7 @@ function CommissionTable({ data, handleAction, pending }) {
                 {c.status === 'closed' && !c.is_paid && (
                   <>
                     <ActionButton label="Xác nhận tiền" color="blue" onClick={() => handleAction(`/api/commissions/${c.id}/confirm-payment`)} />
-                    <ActionButton label="Trảm" color="red" isOverdue={isOverdue} onClick={() => {if(confirm("Trảm thằng này?")) handleAction(`/api/commissions/${c.id}/disqualify`);}} />
+                    <ActionButton label="Huỷ lượt" color="red" isOverdue={isOverdue} onClick={() => {if(confirm("Bạn có chắc chắn muốn hủy lượt đấu giá của người này không?")) handleAction(`/api/commissions/${c.id}/disqualify`);}} />
                   </>
                 )}
               </td>
