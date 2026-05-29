@@ -37,8 +37,8 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center p-6 font-sans">
-      <form onSubmit={handleLogin} className="bg-white p-10 rounded-[2.5rem] shadow-2xl w-full max-w-sm space-y-6 border-4 border-indigo-500">
+    <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4 sm:p-6 font-sans">
+      <form onSubmit={handleLogin} className="bg-white p-6 sm:p-10 rounded-3xl sm:rounded-[2.5rem] shadow-2xl w-full max-w-sm space-y-6 border-4 border-indigo-500">
         <div className="text-center">
           <h1 className="text-3xl font-black tracking-tighter text-gray-900">ADMIN LOGIN</h1>
           <p className="text-gray-400 text-xs font-bold mt-2 uppercase">Vui lòng nhập mật khẩu để quản trị hệ thống</p>

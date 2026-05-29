@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { 
   LayoutDashboard, Gavel, History, Settings, LogOut, 
-  Plus, Search, Bell, CheckCircle2, XCircle, Clock, ShieldAlert 
+  Plus, Search, Bell, CheckCircle2, XCircle, Clock, ShieldAlert,
+  Menu
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
@@ -28,6 +29,7 @@ export default function AdminDashboard() {
   
   // State điều hướng
   const [currentView, setCurrentView] = useState('dashboard'); // dashboard, commissions, logs, settings
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   const [commissions, setCommissions] = useState([]);
   const [logs, setLogs] = useState([]);
@@ -92,25 +94,27 @@ export default function AdminDashboard() {
   // --- RENDER CÁC VIEW KHÁC NHAU ---
   
   const renderDashboard = () => (
-    <div className="space-y-10 animate-in fade-in duration-500">
+    <div className="space-y-6 sm:space-y-10 animate-in fade-in duration-500">
       {/* STATS */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
         <StatCard icon={<Clock className="text-blue-500"/>} label="Đang đấu giá" value={commissions.filter(c => c.status === 'active').length} />
         <StatCard icon={<CheckCircle2 className="text-green-500"/>} label="Đã hoàn thành" value={commissions.filter(c => c.is_paid).length} />
         <StatCard icon={<ShieldAlert className="text-red-500"/>} label="Chờ thanh toán" value={commissions.filter(c => c.status === 'closed' && !c.is_paid).length} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
-          <div className="p-6 border-b border-gray-50 flex justify-between items-center">
-            <h2 className="text-xl font-bold">Đợt đấu giá gần đây</h2>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
+        <div className="lg:col-span-2 bg-white rounded-3xl sm:rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
+          <div className="p-5 sm:p-6 border-b border-gray-50 flex justify-between items-center">
+            <h2 className="text-lg sm:text-xl font-bold">Đợt đấu giá gần đây</h2>
             <button onClick={() => setCurrentView('commissions')} className="text-indigo-600 font-bold text-sm hover:underline">Xem tất cả</button>
           </div>
-          <CommissionTable data={commissions.slice(0, 5)} handleAction={handleAction} pending={pending} />
+          <div className="overflow-x-auto">
+            <CommissionTable data={commissions.slice(0, 5)} handleAction={handleAction} pending={pending} />
+          </div>
         </div>
 
-        <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100 h-fit">
-          <h2 className="text-xl font-bold mb-6 flex items-center gap-2"><Plus size={20} className="text-indigo-600"/> Tạo đợt mới</h2>
+        <div className="bg-white p-5 sm:p-8 rounded-3xl sm:rounded-[2rem] shadow-sm border border-gray-100 h-fit">
+          <h2 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6 flex items-center gap-2"><Plus size={20} className="text-indigo-600"/> Tạo đợt mới</h2>
           <form onSubmit={(e) => { 
             e.preventDefault(); 
             let formattedData;
@@ -134,7 +138,7 @@ export default function AdminDashboard() {
               <Input label="Kết thúc" type="datetime-local" onChange={e => setFormData({...formData, endTime: e.target.value})} />
             </div>
             <Input label="Link ảnh minh hoạ (Tùy chọn)" placeholder="VD: https://imgur.com/xyz.png" onChange={e => setFormData({...formData, imageUrl: e.target.value})} />
-            <button className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg hover:bg-indigo-700 transition-all mt-2">Kích hoạt ngay</button>
+            <button className="w-full bg-indigo-600 text-white py-3 sm:py-4 rounded-2xl font-bold shadow-lg hover:bg-indigo-700 transition-all mt-2">Kích hoạt ngay</button>
           </form>
         </div>
       </div>
@@ -142,24 +146,24 @@ export default function AdminDashboard() {
   );
 
   const renderLogs = () => (
-    <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
-      <div className="p-8 border-b border-gray-50">
-        <h2 className="text-2xl font-bold">Nhật ký hệ thống</h2>
-        <p className="text-gray-400 text-sm">Theo dõi mọi hành động trảm người và xác nhận tiền.</p>
+    <div className="bg-white rounded-3xl sm:rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
+      <div className="p-5 sm:p-8 border-b border-gray-50">
+        <h2 className="text-xl sm:text-2xl font-bold">Nhật ký hệ thống</h2>
+        <p className="text-gray-400 text-xs sm:text-sm">Theo dõi mọi hành động trảm người và xác nhận tiền.</p>
       </div>
-      <div className="p-4 space-y-3 max-h-[600px] overflow-y-auto">
+      <div className="p-3 sm:p-4 space-y-3 max-h-[600px] overflow-y-auto">
         {logs.map(log => (
-          <div key={log.id} className="flex items-center justify-between p-5 bg-gray-50 rounded-2xl border border-gray-100">
-            <div className="flex items-center gap-4">
-              <div className={`p-3 rounded-xl ${log.action.includes('DISQUALIFY') ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>
-                <History size={20}/>
+          <div key={log.id} className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 sm:p-5 bg-gray-50 rounded-2xl border border-gray-100">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className={`p-2.5 sm:p-3 rounded-xl shrink-0 ${log.action.includes('DISQUALIFY') ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>
+                <History size={18} className="sm:w-5 sm:h-5"/>
               </div>
               <div>
-                <p className="font-bold text-gray-900 uppercase text-xs tracking-widest">{log.action}</p>
-                <p className="text-gray-500 text-sm">{JSON.stringify(log.details)}</p>
+                <p className="font-bold text-gray-900 uppercase text-[10px] tracking-widest">{log.action}</p>
+                <p className="text-gray-500 text-xs sm:text-sm">{JSON.stringify(log.details)}</p>
               </div>
             </div>
-            <span className="text-xs font-medium text-gray-400">{new Date(log.created_at).toLocaleString()}</span>
+            <span className="text-[10px] sm:text-xs font-medium text-gray-400 self-start sm:self-auto ml-11 sm:ml-0">{new Date(log.created_at).toLocaleString()}</span>
           </div>
         ))}
       </div>
@@ -167,9 +171,21 @@ export default function AdminDashboard() {
   );
 
   return (
-    <div className="flex min-h-screen bg-[#F8F9FB] font-sans text-[#2D3748]">
+    <div className="flex min-h-screen bg-[#F8F9FB] font-sans text-[#2D3748] relative overflow-x-hidden">
+      
+      {/* SIDEBAR DRAWER OVERLAY FOR MOBILE */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm lg:hidden transition-opacity"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* SIDEBAR */}
-      <aside className="w-64 bg-white border-r border-gray-100 flex flex-col p-6 sticky top-0 h-screen">
+      <aside className={`
+        fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-100 flex flex-col p-6 transition-transform duration-300 lg:translate-x-0 lg:static lg:h-screen shrink-0
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+      `}>
         <div className="flex items-center gap-3 mb-10 px-2">
           <div className="w-10 h-10 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
             <Gavel size={22}/>
@@ -178,13 +194,13 @@ export default function AdminDashboard() {
         </div>
         
         <nav className="flex-1 space-y-2">
-          <NavItem icon={<LayoutDashboard size={20}/>} label="Dashboard" active={currentView === 'dashboard'} onClick={() => setCurrentView('dashboard')} />
-          <NavItem icon={<Gavel size={20}/>} label="Commissions" active={currentView === 'commissions'} onClick={() => setCurrentView('commissions')} />
-          <NavItem icon={<History size={20}/>} label="Audit Logs" active={currentView === 'logs'} onClick={() => setCurrentView('logs')} />
+          <NavItem icon={<LayoutDashboard size={20}/>} label="Dashboard" active={currentView === 'dashboard'} onClick={() => { setCurrentView('dashboard'); setIsSidebarOpen(false); }} />
+          <NavItem icon={<Gavel size={20}/>} label="Commissions" active={currentView === 'commissions'} onClick={() => { setCurrentView('commissions'); setIsSidebarOpen(false); }} />
+          <NavItem icon={<History size={20}/>} label="Audit Logs" active={currentView === 'logs'} onClick={() => { setCurrentView('logs'); setIsSidebarOpen(false); }} />
         </nav>
 
         <div className="pt-6 border-t border-gray-50 space-y-2">
-          <NavItem icon={<Settings size={20}/>} label="Settings" active={currentView === 'settings'} onClick={() => setCurrentView('settings')} />
+          <NavItem icon={<Settings size={20}/>} label="Settings" active={currentView === 'settings'} onClick={() => { setCurrentView('settings'); setIsSidebarOpen(false); }} />
           <button onClick={() => {localStorage.removeItem('adminToken'); navigate('/admin/login');}} className="flex items-center gap-3 w-full px-4 py-3 text-red-500 hover:bg-red-50 rounded-xl transition-all font-bold text-sm">
             <LogOut size={20}/> <span>Đăng xuất</span>
           </button>
@@ -192,19 +208,34 @@ export default function AdminDashboard() {
       </aside>
 
       {/* MAIN CONTENT */}
-      <main className="flex-1 p-10 overflow-y-auto">
-        <header className="flex justify-between items-center mb-12">
-          <div className="relative w-96">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-            <input type="text" placeholder="Tìm kiếm thông tin..." className="w-full pl-12 pr-4 py-3 bg-white border border-gray-100 rounded-2xl focus:ring-2 focus:ring-indigo-500/10 outline-none shadow-sm" />
+      <main className="flex-1 p-4 sm:p-10 overflow-y-auto w-full max-w-full">
+        <header className="flex flex-col-reverse sm:flex-row justify-between items-center gap-4 mb-8 sm:mb-12">
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <button 
+              onClick={() => setIsSidebarOpen(true)} 
+              className="lg:hidden p-3 bg-white border border-gray-100 rounded-2xl shadow-sm text-gray-600 hover:text-gray-900 active:scale-95 transition-all shrink-0"
+            >
+              <Menu size={20} />
+            </button>
+            <div className="relative flex-1 sm:w-96">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <input type="text" placeholder="Tìm kiếm thông tin..." className="w-full pl-12 pr-4 py-3 bg-white border border-gray-100 rounded-2xl focus:ring-2 focus:ring-indigo-500/10 outline-none shadow-sm" />
+            </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto">
+            {/* Logo hiển thị trên mobile khi Sidebar đóng */}
+            <div className="lg:hidden flex items-center gap-2">
+              <div className="w-8 h-8 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-md shadow-indigo-200">
+                <Gavel size={16}/>
+              </div>
+              <span className="text-base font-black tracking-tighter uppercase">Admin<span className="text-indigo-600">Pro</span></span>
+            </div>
             <div className="w-10 h-10 rounded-full bg-indigo-50 border-2 border-white shadow-sm flex items-center justify-center font-bold text-indigo-600">A</div>
           </div>
         </header>
 
-        <div className="mb-10">
-          <h1 className="text-4xl font-black tracking-tight mb-2">
+        <div className="mb-6 sm:mb-10">
+          <h1 className="text-2xl sm:text-4xl font-black tracking-tight mb-2">
             {currentView === 'dashboard' && (() => {
               const h = new Date().getHours();
               if (h < 12) return 'Chào buổi sáng, Admin!';
@@ -219,7 +250,11 @@ export default function AdminDashboard() {
 
         {/* SWITCH VIEWS */}
         {currentView === 'dashboard' && renderDashboard()}
-        {currentView === 'commissions' && <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden"><CommissionTable data={commissions} handleAction={handleAction} pending={pending} /></div>}
+        {currentView === 'commissions' && (
+          <div className="bg-white rounded-3xl sm:rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden overflow-x-auto">
+            <CommissionTable data={commissions} handleAction={handleAction} pending={pending} />
+          </div>
+        )}
         {currentView === 'logs' && renderLogs()}
       </main>
     </div>
@@ -230,29 +265,27 @@ export default function AdminDashboard() {
 
 function CommissionTable({ data, handleAction, pending }) {
   return (
-    <table className="w-full text-left">
+    <table className="w-full text-left min-w-[700px]">
       <thead className="bg-[#FBFBFE] text-[11px] font-bold text-gray-400 uppercase tracking-wider">
         <tr>
-          <th className="px-8 py-5">Tên Commission</th>
-          <th className="px-8 py-5">Người thắng</th>
-          <th className="px-8 py-5">Trạng thái</th>
-          <th className="px-8 py-5 text-right">Hành động</th>
+          <th className="px-4 sm:px-8 py-4 sm:py-5">Tên Commission</th>
+          <th className="px-4 sm:px-8 py-4 sm:py-5">Người thắng</th>
+          <th className="px-4 sm:px-8 py-4 sm:py-5">Trạng thái</th>
+          <th className="px-4 sm:px-8 py-4 sm:py-5 text-right">Hành động</th>
         </tr>
       </thead>
       <tbody className="divide-y divide-gray-50">
         {data.map(c => {
           const isPending = pending.includes(c.id);
-          // [FIX #4] Dùng end_time thay vì updated_at — updated_at thay đổi mỗi lần UPDATE bất kỳ
-          // isOverdue chỉ có nghĩa khi status = 'closed' và người thắng chưa thanh toán
           const isOverdue = c.status === 'closed' && !c.is_paid && c.end_time
             && (new Date() - new Date(c.end_time)) > 86400000;
           return (
             <tr key={c.id} className={`hover:bg-gray-50/50 transition-colors ${isPending ? 'bg-purple-50/50' : ''}`}>
-              <td className="px-8 py-6">
-                <div className="font-bold text-gray-900 text-lg">{c.title}</div>
-                <div className="text-indigo-600 font-black text-xl tracking-tighter">{parseFloat(c.current_price).toLocaleString('vi-VN')} đ</div>
+              <td className="px-4 sm:px-8 py-4 sm:py-6">
+                <div className="font-bold text-gray-900 text-base sm:text-lg">{c.title}</div>
+                <div className="text-indigo-600 font-black text-lg sm:text-xl tracking-tighter">{parseFloat(c.current_price).toLocaleString('vi-VN')} đ</div>
               </td>
-              <td className="px-8 py-6">
+              <td className="px-4 sm:px-8 py-4 sm:py-6">
                 {c.winner_name ? (
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xs">{c.winner_name[0]}</div>
@@ -263,18 +296,20 @@ function CommissionTable({ data, handleAction, pending }) {
                   </div>
                 ) : <span className="text-gray-300 italic text-xs">Chưa có bid</span>}
               </td>
-              <td className="px-8 py-6">
+              <td className="px-4 sm:px-8 py-4 sm:py-6">
                 <StatusPill status={c.is_paid ? 'Paid' : isPending ? 'Pending' : c.status} />
               </td>
-              <td className="px-8 py-6 text-right space-x-2">
-                {c.status === 'upcoming' && <ActionButton label="Mở Bid" color="green" onClick={() => handleAction(`/api/commissions/${c.id}/status`, 'PUT', {status: 'active'})} />}
-                {c.status === 'active' && <ActionButton label="Chốt đơn" color="black" onClick={() => handleAction(`/api/commissions/${c.id}/status`, 'PUT', {status: 'closed'})} />}
-                {c.status === 'closed' && !c.is_paid && (
-                  <>
-                    <ActionButton label="Xác nhận tiền" color="blue" onClick={() => handleAction(`/api/commissions/${c.id}/confirm-payment`)} />
-                    <ActionButton label="Huỷ lượt" color="red" isOverdue={isOverdue} onClick={() => {if(confirm("Bạn có chắc chắn muốn hủy lượt đấu giá của người này không?")) handleAction(`/api/commissions/${c.id}/disqualify`);}} />
-                  </>
-                )}
+              <td className="px-4 sm:px-8 py-4 sm:py-6 text-right">
+                <div className="flex flex-wrap gap-1.5 justify-end">
+                  {c.status === 'upcoming' && <ActionButton label="Mở Bid" color="green" onClick={() => handleAction(`/api/commissions/${c.id}/status`, 'PUT', {status: 'active'})} />}
+                  {c.status === 'active' && <ActionButton label="Chốt đơn" color="black" onClick={() => handleAction(`/api/commissions/${c.id}/status`, 'PUT', {status: 'closed'})} />}
+                  {c.status === 'closed' && !c.is_paid && (
+                    <>
+                      <ActionButton label="Xác nhận tiền" color="blue" onClick={() => handleAction(`/api/commissions/${c.id}/confirm-payment`)} />
+                      <ActionButton label="Huỷ lượt" color="red" isOverdue={isOverdue} onClick={() => {if(confirm("Bạn có chắc chắn muốn hủy lượt đấu giá của người này không?")) handleAction(`/api/commissions/${c.id}/disqualify`);}} />
+                    </>
+                  )}
+                </div>
               </td>
             </tr>
           );
@@ -294,11 +329,11 @@ function NavItem({ icon, label, active, onClick }) {
 
 function StatCard({ icon, label, value }) {
   return (
-    <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 flex items-center gap-6">
-      <div className="p-5 bg-gray-50 rounded-2xl">{icon}</div>
+    <div className="bg-white p-5 sm:p-8 rounded-3xl sm:rounded-[2.5rem] shadow-sm border border-gray-100 flex items-center gap-4 sm:gap-6">
+      <div className="p-4 sm:p-5 bg-gray-50 rounded-xl sm:rounded-2xl">{icon}</div>
       <div>
         <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest mb-1">{label}</p>
-        <p className="text-3xl font-black tracking-tighter">{value}</p>
+        <p className="text-2xl sm:text-3xl font-black tracking-tighter">{value}</p>
       </div>
     </div>
   );
