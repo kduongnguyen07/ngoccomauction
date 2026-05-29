@@ -265,7 +265,7 @@ app.get('/api/commissions/active', async (req, res, next) => {
     const updateRes = await client.query(`
       UPDATE commissions 
       SET status = 'active' 
-      WHERE status = 'upcoming' AND start_time <= NOW()
+      WHERE status = 'upcoming' AND start_time <= timezone('utc', now())
     `);
     if (updateRes.rowCount > 0) {
       notifyAll();
