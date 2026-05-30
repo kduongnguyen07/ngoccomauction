@@ -24,6 +24,12 @@ async function initDb() {
         end_time TIMESTAMPTZ NOT NULL,
         is_paid BOOLEAN DEFAULT FALSE,
         image_url VARCHAR(1000),
+        min_increase NUMERIC(10, 2) DEFAULT 20000,
+        max_increase NUMERIC(10, 2) DEFAULT NULL,
+        auto_buy_price NUMERIC(10, 2) DEFAULT 1000000,
+        rule_payment VARCHAR(500) DEFAULT 'Trong vòng 24h kể từ khi phiên đấu kết thúc',
+        rule_disqualify VARCHAR(500) DEFAULT 'Nghiêm cấm tự ý huỷ lượt đấu giá / bùng cọc',
+        rule_usage VARCHAR(500) DEFAULT 'Mục đích cá nhân (Thương mại sẽ tính phí riêng)',
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         CONSTRAINT price_check CHECK (current_price >= start_price)
       );

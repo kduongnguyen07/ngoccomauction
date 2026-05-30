@@ -90,6 +90,12 @@ const commissionSchema = Joi.object({
   startTime: Joi.string().isoDate().required(),
   endTime: Joi.string().isoDate().required(),
   imageUrl: Joi.string().max(1000).allow('', null).optional(),
+  minIncrease: Joi.number().min(0).optional().default(20000),
+  maxIncrease: Joi.number().min(0).allow('', null).optional().default(null),
+  autoBuyPrice: Joi.number().min(0).optional().default(1000000),
+  rulePayment: Joi.string().max(500).allow('', null).optional().default('Trong vòng 24h kể từ khi phiên đấu kết thúc'),
+  ruleDisqualify: Joi.string().max(500).allow('', null).optional().default('Nghiêm cấm tự ý huỷ lượt đấu giá / bùng cọc'),
+  ruleUsage: Joi.string().max(500).allow('', null).optional().default('Mục đích cá nhân (Thương mại sẽ tính phí riêng)'),
 });
 
 const bidderSchema = Joi.object({
@@ -124,16 +130,63 @@ app.get('/api/commissions', authMiddleware, async (req, res, next) => {
 });
 
 app.post('/api/commissions', authMiddleware, async (req, res, next) => {
-  const { error } = commissionSchema.validate(req.body);
+  const { error, value } = commissionSchema.validate(req.body);
   if (error) return res.status(400).json({ error: error.details[0].message });
 
-  const { title, phase, startPrice, startTime, endTime, imageUrl } = req.body;
+  const { 
+    title, phase, startPrice, startTime, endTime, imageUrl,
+    minIncrease, maxIncrease, autoBuyPrice, rulePayment, ruleDisqualify, ruleUsage 
+  } = value;
+
   let client;
   try {
     client = await pool.connect();
     await client.query(
-      'INSERT INTO commissions (title, phase, start_price, current_price, start_time, end_time, status, image_url) VALUES ($1, $2, $3, $3, $4, $5, \'upcoming\', $6)',
-      [title, phase, startPrice, startTime, endTime, imageUrl || null]
+      `INSERT INTO commissions (
+        title, phase, start_price, current_price, start_time, end_time, status, image_url,
+        min_increase, max_increase, auto_buy_price, rule_payment, rule_disqualify, rule_usage
+      ) VALUES ($1, $2, $3, $3, $4, $5, 'upcoming', $6, $7, $8, $9, $10, $11, $12)`,
+      [
+        title, phase, startPrice, startTime, endTime, imageUrl || null,
+        minIncrease, maxIncrease || null, autoBuyPrice, 
+        rulePayment || 'Trong vòng 24h kể từ khi phiên đấu kết thúc', 
+        ruleDisqualify || 'Nghiêm cấm tự ý huỷ lượt đấu giá / bùng cọc', 
+        ruleUsage || 'Mục đích cá nhân (Thương mại sẽ tính phí riêng)'
+      ]
+    );
+    notifyAll();
+    res.json({ success: true });
+  } catch (e) {
+    next(e);
+  } finally {
+    if (client) client.release();
+  }
+});
+
+app.put('/api/commissions/:id', authMiddleware, async (req, res, next) => {
+  const { error, value } = commissionSchema.validate(req.body);
+  if (error) return res.status(400).json({ error: error.details[0].message });
+
+  const { id } = req.params;
+  const { 
+    title, phase, startPrice, startTime, endTime, imageUrl,
+    minIncrease, maxIncrease, autoBuyPrice, rulePayment, ruleDisqualify, ruleUsage 
+  } = value;
+
+  let client;
+  try {
+    client = await pool.connect();
+    await client.query(
+      `UPDATE commissions 
+       SET title = $1, phase = $2, start_price = $3, start_time = $4, end_time = $5, image_url = $6,
+           min_increase = $7, max_increase = $8, auto_buy_price = $9, 
+           rule_payment = $10, rule_disqualify = $11, rule_usage = $12
+       WHERE id = $13`,
+      [
+        title, phase, startPrice, startTime, endTime, imageUrl || null,
+        minIncrease, maxIncrease || null, autoBuyPrice, rulePayment, ruleDisqualify, ruleUsage,
+        id
+      ]
     );
     notifyAll();
     res.json({ success: true });
@@ -255,6 +308,19 @@ app.get('/api/admin/logs', authMiddleware, async (req, res, next) => {
   }
 });
 
+app.get('/api/admin/bidders', authMiddleware, async (req, res, next) => {
+  let client;
+  try {
+    client = await pool.connect();
+    const ans = await client.query('SELECT * FROM bidders ORDER BY id DESC');
+    res.json(ans.rows);
+  } catch (e) {
+    next(e);
+  } finally {
+    if (client) client.release();
+  }
+});
+
 // --- API CLIENT ---
 app.get('/api/commissions/active', async (req, res, next) => {
   let client;
@@ -275,6 +341,8 @@ app.get('/api/commissions/active', async (req, res, next) => {
       SELECT
         c.id, c.title, c.phase, c.status, c.current_price,
         c.start_price, c.start_time, c.end_time, c.is_paid, c.image_url,
+        c.min_increase, c.max_increase, c.auto_buy_price,
+        c.rule_payment, c.rule_disqualify, c.rule_usage,
         (
           SELECT bidder_id FROM bids WHERE commission_id = c.id ORDER BY created_at DESC LIMIT 1
         ) as winner_bidder_id
@@ -353,17 +421,24 @@ app.post('/api/bid', bidLimiter, bidderAuthMiddleware, async (req, res, next) =>
     if (!com) throw new Error('Commission not found');
     if (com.status !== 'active') throw new Error('Auction not active');
     
-    let amount = isAutoBuy ? AUTO_BUY_PRICE : bidAmount;
+    const minIncrease = parseFloat(com.min_increase);
+    const maxIncrease = com.max_increase ? parseFloat(com.max_increase) : null;
+    const autoBuyPrice = parseFloat(com.auto_buy_price);
+    
+    let amount = isAutoBuy ? autoBuyPrice : bidAmount;
     let newStatus = 'active';
     
     if (isAutoBuy) {
-      if (parseFloat(com.current_price) >= AUTO_BUY_PRICE) throw new Error('Auto-buy unavailable');
+      if (parseFloat(com.current_price) >= autoBuyPrice) throw new Error('Auto-buy unavailable');
       newStatus = 'closed';
     } else {
-      if (amount < parseFloat(com.current_price) + MIN_INCREASE) {
-        throw new Error(`Bid tối thiểu phải cao hơn giá hiện tại ${MIN_INCREASE.toLocaleString('vi-VN')} đ!`);
+      if (amount < parseFloat(com.current_price) + minIncrease) {
+        throw new Error(`Bid tối thiểu phải cao hơn giá hiện tại ${minIncrease.toLocaleString('vi-VN')} đ!`);
       }
-      if (amount >= AUTO_BUY_PRICE) newStatus = 'closed';
+      if (maxIncrease && amount > parseFloat(com.current_price) + maxIncrease) {
+        throw new Error(`Bước nhảy giá tối đa mỗi lần là ${maxIncrease.toLocaleString('vi-VN')} đ!`);
+      }
+      if (amount >= autoBuyPrice) newStatus = 'closed';
     }
     
     await client.query('UPDATE commissions SET current_price = $1, status = $2 WHERE id = $3', [amount, newStatus, commissionId]);
@@ -376,7 +451,7 @@ app.post('/api/bid', bidLimiter, bidderAuthMiddleware, async (req, res, next) =>
   } catch (e) {
     if (client) await client.query('ROLLBACK');
     const clientErrors = ['Bidder not found', 'Commission not found', 'Auction not active', 'Auto-buy unavailable'];
-    if (clientErrors.includes(e.message) || e.message.startsWith('Bid tối thiểu')) {
+    if (clientErrors.includes(e.message) || e.message.startsWith('Bid tối thiểu') || e.message.startsWith('Bước nhảy giá')) {
       res.status(400).json({ error: e.message });
     } else {
       next(e);

@@ -33,9 +33,55 @@ export default function AdminDashboard() {
   
   const [commissions, setCommissions] = useState([]);
   const [logs, setLogs] = useState([]);
+  const [bidders, setBidders] = useState([]);
   const [pending, setPending] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [formData, setFormData] = useState({ title: '', phase: '', startPrice: 0, startTime: '', endTime: '', imageUrl: '' });
+  const [formData, setFormData] = useState({
+    title: '',
+    phase: '',
+    startPrice: 0,
+    startTime: '',
+    endTime: '',
+    imageUrl: '',
+    minIncrease: 20000,
+    maxIncrease: '',
+    autoBuyPrice: 1000000,
+    rulePayment: 'Trong vòng 24h kể từ khi phiên đấu kết thúc',
+    ruleDisqualify: 'Nghiêm cấm tự ý huỷ lượt đấu giá / bùng cọc',
+    ruleUsage: 'Mục đích cá nhân (Thương mại sẽ tính phí riêng)'
+  });
+
+  const [editingCommission, setEditingCommission] = useState(null);
+  const [editFormData, setEditFormData] = useState({
+    title: '', phase: '', startPrice: 0, startTime: '', endTime: '', imageUrl: '',
+    minIncrease: 20000, maxIncrease: '', autoBuyPrice: 1000000,
+    rulePayment: '', ruleDisqualify: '', ruleUsage: ''
+  });
+
+  const handleEditClick = (c) => {
+    const formatLocalDate = (isoStr) => {
+      if (!isoStr) return '';
+      const d = new Date(isoStr);
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    };
+
+    setEditingCommission(c);
+    setEditFormData({
+      title: c.title,
+      phase: c.phase,
+      startPrice: parseFloat(c.start_price),
+      startTime: formatLocalDate(c.start_time),
+      endTime: formatLocalDate(c.end_time),
+      imageUrl: c.image_url || '',
+      minIncrease: parseFloat(c.min_increase) || 20000,
+      maxIncrease: c.max_increase ? parseFloat(c.max_increase) : '',
+      autoBuyPrice: parseFloat(c.auto_buy_price) || 1000000,
+      rulePayment: c.rule_payment || 'Trong vòng 24h kể từ khi phiên đấu kết thúc',
+      ruleDisqualify: c.rule_disqualify || 'Nghiêm cấm tự ý huỷ lượt đấu giá / bùng cọc',
+      ruleUsage: c.rule_usage || 'Mục đích cá nhân (Thương mại sẽ tính phí riêng)'
+    });
+  };
 
   const authHeader = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
 
@@ -44,13 +90,15 @@ export default function AdminDashboard() {
     const currentToken = localStorage.getItem('adminToken');
     const headers = { 'Authorization': `Bearer ${currentToken}`, 'Content-Type': 'application/json' };
     try {
-      const [resCom, resLogs] = await Promise.all([
+      const [resCom, resLogs, resBidders] = await Promise.all([
         fetch(`${API_URL}/api/commissions`, { headers }),
-        fetch(`${API_URL}/api/admin/logs`, { headers })
+        fetch(`${API_URL}/api/admin/logs`, { headers }),
+        fetch(`${API_URL}/api/admin/bidders`, { headers })
       ]);
       if (resCom.status === 401 || resCom.status === 403) navigate('/admin/login');
       setCommissions(await resCom.json());
       setLogs(await resLogs.json());
+      setBidders(await resBidders.json());
     } catch (e) { console.error(e); }
   }, [navigate]);
 
@@ -109,11 +157,11 @@ export default function AdminDashboard() {
             <button onClick={() => setCurrentView('commissions')} className="text-indigo-600 font-bold text-sm hover:underline">Xem tất cả</button>
           </div>
           <div className="overflow-x-auto">
-            <CommissionTable data={commissions.slice(0, 5)} handleAction={handleAction} pending={pending} />
+            <CommissionTable data={commissions.slice(0, 5)} handleAction={handleAction} pending={pending} handleEditClick={handleEditClick} />
           </div>
         </div>
 
-        <div className="bg-white p-5 sm:p-8 rounded-3xl sm:rounded-[2rem] shadow-sm border border-gray-100 h-fit">
+        <div className="bg-white p-5 sm:p-8 rounded-3xl sm:rounded-[2rem] shadow-sm border border-gray-100 h-fit max-h-[85vh] overflow-y-auto">
           <h2 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6 flex items-center gap-2"><Plus size={20} className="text-indigo-600"/> Tạo đợt mới</h2>
           <form onSubmit={(e) => { 
             e.preventDefault(); 
@@ -130,14 +178,31 @@ export default function AdminDashboard() {
             }
             handleAction('/api/commissions', 'POST', formattedData); 
           }} className="space-y-4">
-            <Input label="Tên Commission" placeholder="VD: Vẽ Chibi" onChange={e => setFormData({...formData, title: e.target.value})} />
-            <Input label="Giai đoạn" placeholder="VD: Batch #1" onChange={e => setFormData({...formData, phase: e.target.value})} />
-            <Input label="Giá khởi điểm (VND)" type="number" onChange={e => setFormData({...formData, startPrice: e.target.value})} />
+            <Input label="Tên Commission" placeholder="VD: Vẽ Chibi" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
+            <Input label="Giai đoạn" placeholder="VD: Batch #1" value={formData.phase} onChange={e => setFormData({...formData, phase: e.target.value})} />
+            <Input label="Giá khởi điểm (VND)" type="number" value={formData.startPrice} onChange={e => setFormData({...formData, startPrice: parseFloat(e.target.value) || 0})} />
             <div className="grid grid-cols-2 gap-4">
-              <Input label="Bắt đầu" type="datetime-local" onChange={e => setFormData({...formData, startTime: e.target.value})} />
-              <Input label="Kết thúc" type="datetime-local" onChange={e => setFormData({...formData, endTime: e.target.value})} />
+              <Input label="Bắt đầu" type="datetime-local" value={formData.startTime} onChange={e => setFormData({...formData, startTime: e.target.value})} />
+              <Input label="Kết thúc" type="datetime-local" value={formData.endTime} onChange={e => setFormData({...formData, endTime: e.target.value})} />
             </div>
-            <Input label="Link ảnh minh hoạ (Tùy chọn)" placeholder="VD: https://imgur.com/xyz.png" onChange={e => setFormData({...formData, imageUrl: e.target.value})} />
+            <Input label="Link ảnh minh hoạ (Tùy chọn)" placeholder="VD: https://imgur.com/xyz.png" value={formData.imageUrl} onChange={e => setFormData({...formData, imageUrl: e.target.value})} />
+            
+            <div className="border-t border-gray-100 pt-4 mt-4">
+              <h3 className="text-xs font-black text-gray-500 mb-3 uppercase tracking-wider">Luật Đấu Giá Cụ Thể</h3>
+              <div className="grid grid-cols-3 gap-2">
+                <Input label="MI tối thiểu" type="number" value={formData.minIncrease} onChange={e => setFormData({...formData, minIncrease: parseFloat(e.target.value) || 0})} />
+                <Input label="Tăng tối đa" type="number" placeholder="Không" value={formData.maxIncrease} onChange={e => setFormData({...formData, maxIncrease: e.target.value ? parseFloat(e.target.value) : ''})} />
+                <Input label="Giá AB" type="number" value={formData.autoBuyPrice} onChange={e => setFormData({...formData, autoBuyPrice: parseFloat(e.target.value) || 0})} />
+              </div>
+            </div>
+
+            <div className="border-t border-gray-100 pt-4 mt-4 space-y-3">
+              <h3 className="text-xs font-black text-gray-500 uppercase tracking-wider">Quy định hiển thị</h3>
+              <Input label="Thanh Toán" value={formData.rulePayment} onChange={e => setFormData({...formData, rulePayment: e.target.value})} />
+              <Input label="Hủy Lượt / Trảm" value={formData.ruleDisqualify} onChange={e => setFormData({...formData, ruleDisqualify: e.target.value})} />
+              <Input label="Quyền Sử Dụng" value={formData.ruleUsage} onChange={e => setFormData({...formData, ruleUsage: e.target.value})} />
+            </div>
+
             <button className="w-full bg-indigo-600 text-white py-3 sm:py-4 rounded-2xl font-bold shadow-lg hover:bg-indigo-700 transition-all mt-2">Kích hoạt ngay</button>
           </form>
         </div>
@@ -145,27 +210,87 @@ export default function AdminDashboard() {
     </div>
   );
 
+  const formatLogMessage = (log) => {
+    try {
+      const details = typeof log.details === 'string' ? JSON.parse(log.details) : log.details;
+      if (log.action === 'CONFIRM_PAYMENT') {
+        return `✅ Đã nhận tiền cọc cho Commission #${details.commission_id}`;
+      }
+      if (log.action === 'DISQUALIFY') {
+        return `❌ Đã trảm (Hủy lượt): Bidder "${details.winner_name || 'không rõ'}" tại Commission #${details.commission_id}`;
+      }
+      return `${log.action}: ${JSON.stringify(details)}`;
+    } catch (e) {
+      return `${log.action}: ${JSON.stringify(log.details)}`;
+    }
+  };
+
   const renderLogs = () => (
-    <div className="bg-white rounded-3xl sm:rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
-      <div className="p-5 sm:p-8 border-b border-gray-50">
-        <h2 className="text-xl sm:text-2xl font-bold">Nhật ký hệ thống</h2>
-        <p className="text-gray-400 text-xs sm:text-sm">Theo dõi mọi hành động trảm người và xác nhận tiền.</p>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 animate-in slide-in-from-bottom-4 duration-500">
+      {/* CỘT 1: DANH SÁCH BIDDER ĐÃ ĐĂNG KÝ */}
+      <div className="bg-white rounded-3xl sm:rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
+        <div className="p-5 sm:p-8 border-b border-gray-50">
+          <h2 className="text-xl sm:text-2xl font-bold">Người tham gia đấu giá</h2>
+          <p className="text-gray-400 text-xs sm:text-sm">Danh sách các tài khoản đã đăng ký trong hệ thống.</p>
+        </div>
+        <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
+          <table className="w-full text-left">
+            <thead className="bg-[#FBFBFE] text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+              <tr>
+                <th className="px-6 py-4">Tên người dùng</th>
+                <th className="px-6 py-4">Thông tin liên hệ</th>
+                <th className="px-6 py-4">Ngày đăng ký</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {bidders.map(b => (
+                <tr key={b.id} className="hover:bg-gray-50/50 transition-colors">
+                  <td className="px-6 py-4 font-bold text-gray-900">{b.full_name}</td>
+                  <td className="px-6 py-4 text-indigo-600 font-medium text-sm">
+                    {b.contact_info.startsWith('http') ? (
+                      <a href={b.contact_info} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                        Link liên hệ
+                      </a>
+                    ) : b.contact_info}
+                  </td>
+                  <td className="px-6 py-4 text-gray-400 text-xs">{new Date(b.created_at).toLocaleString()}</td>
+                </tr>
+              ))}
+              {bidders.length === 0 && (
+                <tr>
+                  <td colSpan="3" className="px-6 py-8 text-center text-gray-400 italic">Chưa có người đăng ký nào.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
-      <div className="p-3 sm:p-4 space-y-3 max-h-[600px] overflow-y-auto">
-        {logs.map(log => (
-          <div key={log.id} className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 sm:p-5 bg-gray-50 rounded-2xl border border-gray-100">
-            <div className="flex items-center gap-3 sm:gap-4">
-              <div className={`p-2.5 sm:p-3 rounded-xl shrink-0 ${log.action.includes('DISQUALIFY') ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>
-                <History size={18} className="sm:w-5 sm:h-5"/>
+
+      {/* CỘT 2: NHẬT KÝ HỆ THỐNG */}
+      <div className="bg-white rounded-3xl sm:rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
+        <div className="p-5 sm:p-8 border-b border-gray-50">
+          <h2 className="text-xl sm:text-2xl font-bold">Nhật ký giao dịch</h2>
+          <p className="text-gray-400 text-xs sm:text-sm">Lịch sử thanh toán cọc và các hình phạt hủy lượt.</p>
+        </div>
+        <div className="p-4 sm:p-6 space-y-3 max-h-[600px] overflow-y-auto">
+          {logs.map(log => {
+            const isDisqualify = log.action === 'DISQUALIFY';
+            return (
+              <div key={log.id} className="flex flex-col gap-2 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                <div className="flex items-center justify-between">
+                  <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${isDisqualify ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>
+                    {isDisqualify ? '❌ Trảm' : '✅ Nhận cọc'}
+                  </span>
+                  <span className="text-[10px] font-medium text-gray-400">{new Date(log.created_at).toLocaleString()}</span>
+                </div>
+                <p className="text-gray-700 text-sm font-bold">{formatLogMessage(log)}</p>
               </div>
-              <div>
-                <p className="font-bold text-gray-900 uppercase text-[10px] tracking-widest">{log.action}</p>
-                <p className="text-gray-500 text-xs sm:text-sm">{JSON.stringify(log.details)}</p>
-              </div>
-            </div>
-            <span className="text-[10px] sm:text-xs font-medium text-gray-400 self-start sm:self-auto ml-11 sm:ml-0">{new Date(log.created_at).toLocaleString()}</span>
-          </div>
-        ))}
+            );
+          })}
+          {logs.length === 0 && (
+            <p className="text-center text-gray-400 italic py-8">Chưa có nhật ký giao dịch nào.</p>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -196,7 +321,7 @@ export default function AdminDashboard() {
         <nav className="flex-1 space-y-2">
           <NavItem icon={<LayoutDashboard size={20}/>} label="Dashboard" active={currentView === 'dashboard'} onClick={() => { setCurrentView('dashboard'); setIsSidebarOpen(false); }} />
           <NavItem icon={<Gavel size={20}/>} label="Commissions" active={currentView === 'commissions'} onClick={() => { setCurrentView('commissions'); setIsSidebarOpen(false); }} />
-          <NavItem icon={<History size={20}/>} label="Audit Logs" active={currentView === 'logs'} onClick={() => { setCurrentView('logs'); setIsSidebarOpen(false); }} />
+          <NavItem icon={<History size={20}/>} label="Bidders & Logs" active={currentView === 'logs'} onClick={() => { setCurrentView('logs'); setIsSidebarOpen(false); }} />
         </nav>
 
         <div className="pt-6 border-t border-gray-50 space-y-2">
@@ -243,7 +368,7 @@ export default function AdminDashboard() {
               return 'Chào buổi tối, Admin!';
             })()}
             {currentView === 'commissions' && "Quản lý Commissions"}
-            {currentView === 'logs' && "Nhật ký hệ thống"}
+            {currentView === 'logs' && "Người tham gia & Nhật ký giao dịch"}
           </h1>
           <p className="text-gray-400 font-medium uppercase text-[10px] tracking-[0.2em]">Hệ thống đấu giá Commission v2.0</p>
         </div>
@@ -252,18 +377,84 @@ export default function AdminDashboard() {
         {currentView === 'dashboard' && renderDashboard()}
         {currentView === 'commissions' && (
           <div className="bg-white rounded-3xl sm:rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden overflow-x-auto">
-            <CommissionTable data={commissions} handleAction={handleAction} pending={pending} />
+            <CommissionTable data={commissions} handleAction={handleAction} pending={pending} handleEditClick={handleEditClick} />
           </div>
         )}
         {currentView === 'logs' && renderLogs()}
       </main>
+
+      {/* SỬA LUẬT MODAL */}
+      {editingCommission && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-100 animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Chỉnh sửa luật & Thông tin</h2>
+              <button 
+                onClick={() => setEditingCommission(null)} 
+                className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+              >
+                &times;
+              </button>
+            </div>
+            
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              let formattedData;
+              try {
+                formattedData = {
+                  ...editFormData,
+                  startTime: editFormData.startTime ? new Date(editFormData.startTime).toISOString() : '',
+                  endTime: editFormData.endTime ? new Date(editFormData.endTime).toISOString() : ''
+                };
+              } catch (err) {
+                toast.error("Vui lòng nhập ngày giờ hợp lệ!");
+                return;
+              }
+              await handleAction(`/api/commissions/${editingCommission.id}`, 'PUT', formattedData);
+              setEditingCommission(null);
+            }} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input label="Tên Commission" value={editFormData.title} onChange={e => setEditFormData({...editFormData, title: e.target.value})} />
+                <Input label="Giai đoạn" value={editFormData.phase} onChange={e => setEditFormData({...editFormData, phase: e.target.value})} />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Input label="Giá khởi điểm (VND)" type="number" value={editFormData.startPrice} onChange={e => setEditFormData({...editFormData, startPrice: parseFloat(e.target.value) || 0})} />
+                <Input label="Bắt đầu" type="datetime-local" value={editFormData.startTime} onChange={e => setEditFormData({...editFormData, startTime: e.target.value})} />
+                <Input label="Kết thúc" type="datetime-local" value={editFormData.endTime} onChange={e => setEditFormData({...editFormData, endTime: e.target.value})} />
+              </div>
+              <Input label="Link ảnh minh hoạ" value={editFormData.imageUrl} onChange={e => setEditFormData({...editFormData, imageUrl: e.target.value})} />
+              
+              <div className="border-t border-gray-100 pt-4 mt-4">
+                <h3 className="text-sm font-bold text-gray-700 mb-3">Luật Đấu Giá Cụ Thể</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Input label="Mức tăng tối thiểu (VND)" type="number" value={editFormData.minIncrease} onChange={e => setEditFormData({...editFormData, minIncrease: parseFloat(e.target.value) || 0})} />
+                  <Input label="Mức tăng tối đa (Không bắt buộc)" type="number" placeholder="Không giới hạn" value={editFormData.maxIncrease} onChange={e => setEditFormData({...editFormData, maxIncrease: e.target.value ? parseFloat(e.target.value) : ''})} />
+                  <Input label="Giá mua đứt AB (VND)" type="number" value={editFormData.autoBuyPrice} onChange={e => setEditFormData({...editFormData, autoBuyPrice: parseFloat(e.target.value) || 0})} />
+                </div>
+              </div>
+
+              <div className="border-t border-gray-100 pt-4 mt-4 space-y-4">
+                <h3 className="text-sm font-bold text-gray-700">Quy định hiển thị</h3>
+                <Input label="Luật Thanh Toán" value={editFormData.rulePayment} onChange={e => setEditFormData({...editFormData, rulePayment: e.target.value})} />
+                <Input label="Luật Hủy Lượt / Trảm" value={editFormData.ruleDisqualify} onChange={e => setEditFormData({...editFormData, ruleDisqualify: e.target.value})} />
+                <Input label="Quyền Sử Dụng" value={editFormData.ruleUsage} onChange={e => setEditFormData({...editFormData, ruleUsage: e.target.value})} />
+              </div>
+
+              <div className="flex gap-3 justify-end pt-4">
+                <button type="button" onClick={() => setEditingCommission(null)} className="px-5 py-3 rounded-2xl bg-gray-100 text-gray-600 font-bold hover:bg-gray-200 transition-colors">Hủy</button>
+                <button type="submit" className="px-5 py-3 rounded-2xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-100">Lưu thay đổi</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 // --- SUB-COMPONENTS ---
 
-function CommissionTable({ data, handleAction, pending }) {
+function CommissionTable({ data, handleAction, pending, handleEditClick }) {
   return (
     <table className="w-full text-left min-w-[700px]">
       <thead className="bg-[#FBFBFE] text-[11px] font-bold text-gray-400 uppercase tracking-wider">
@@ -301,6 +492,9 @@ function CommissionTable({ data, handleAction, pending }) {
               </td>
               <td className="px-4 sm:px-8 py-4 sm:py-6 text-right">
                 <div className="flex flex-wrap gap-1.5 justify-end">
+                  {(c.status === 'upcoming' || c.status === 'active') && handleEditClick && (
+                    <ActionButton label="Sửa luật" color="orange" onClick={() => handleEditClick(c)} />
+                  )}
                   {c.status === 'upcoming' && <ActionButton label="Mở Bid" color="green" onClick={() => handleAction(`/api/commissions/${c.id}/status`, 'PUT', {status: 'active'})} />}
                   {c.status === 'active' && <ActionButton label="Chốt đơn" color="black" onClick={() => handleAction(`/api/commissions/${c.id}/status`, 'PUT', {status: 'closed'})} />}
                   {c.status === 'closed' && !c.is_paid && (
@@ -355,9 +549,10 @@ function ActionButton({ label, color, onClick, isOverdue }) {
     green: 'bg-green-500 hover:bg-green-600',
     black: 'bg-gray-900 hover:bg-black',
     blue: 'bg-blue-600 hover:bg-blue-700',
-    red: isOverdue ? 'bg-red-600 animate-pulse' : 'bg-red-400 hover:bg-red-500'
+    red: isOverdue ? 'bg-red-600 animate-pulse' : 'bg-red-400 hover:bg-red-500',
+    orange: 'bg-orange-500 hover:bg-orange-600'
   };
-  return <button onClick={onClick} className={`${colors[color]} text-white px-4 py-2 rounded-xl text-[10px] font-black shadow-sm transition-all active:scale-95 uppercase tracking-wider`}>{label}</button>;
+  return <button onClick={onClick} className={`${colors[color] || 'bg-indigo-600 hover:bg-indigo-700'} text-white px-4 py-2 rounded-xl text-[10px] font-black shadow-sm transition-all active:scale-95 uppercase tracking-wider`}>{label}</button>;
 }
 
 function Input({ label, ...props }) {
