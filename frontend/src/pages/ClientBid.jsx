@@ -761,8 +761,12 @@ export default function ClientBid() {
 
   if (!commission) {
     return (
-      <div className={`flex items-center justify-center min-h-screen ${isDarkMode ? theme.bgPageDark : theme.bgPageLight} transition-colors duration-500`}>
-        <p className={`text-xl font-bold italic animate-pulse ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Đang tải phiên đấu giá...</p>
+      <div className={`flex flex-col items-center justify-center min-h-screen ${isDarkMode ? theme.bgPageDark : theme.bgPageLight} transition-colors duration-500`}>
+        <div className="relative mb-6 flex items-center justify-center">
+          <div className={`w-16 h-16 rounded-full border-4 ${isDarkMode ? 'border-white/5' : 'border-slate-200'} border-t-current ${theme.text} animate-spin`} />
+          <Gavel className={`absolute m-auto ${theme.text} animate-pulse`} size={24} />
+        </div>
+        <p className={`text-xs font-black tracking-widest uppercase animate-pulse ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Đang kết nối phòng đấu giá...</p>
       </div>
     );
   }
@@ -1400,7 +1404,25 @@ export default function ClientBid() {
               );
             })}
             {bidHistory.length === 0 && (
-              <p className={`text-sm text-center py-10 italic ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Hãy là người đầu tiên đặt bid!</p>
+              <div className={`flex flex-col items-center justify-center text-center p-8 rounded-2xl border border-dashed transition-all duration-500 ${
+                isDarkMode 
+                  ? 'bg-black/10 border-white/10 text-slate-400' 
+                  : 'bg-slate-50/50 border-slate-200 text-slate-500 shadow-inner'
+              }`}>
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 transition-colors duration-500 ${
+                  isDarkMode ? 'bg-slate-800/80 border border-white/5 text-slate-400' : 'bg-white border-slate-200 text-slate-400'
+                }`}>
+                  <Gavel size={20} className="animate-pulse" />
+                </div>
+                <h4 className={`font-black text-sm uppercase tracking-wider mb-1.5 ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>Chưa có lượt đấu giá</h4>
+                <p className="text-xs text-slate-500 font-medium max-w-[200px] leading-relaxed">
+                  Hãy là người tiên phong đặt bid đầu tiên để dẫn đầu phòng đấu giá!
+                </p>
+                <div className="flex items-center gap-1.5 mt-4 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[10px] font-black uppercase tracking-wider">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                  Sẵn sàng nhận Bid
+                </div>
+              </div>
             )}
           </div>
         </div>
