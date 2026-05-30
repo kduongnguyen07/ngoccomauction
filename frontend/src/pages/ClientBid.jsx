@@ -15,7 +15,7 @@ const API_URL = (rawApiUrl.startsWith('http://') || rawApiUrl.startsWith('https:
 // SĐT MOMO NHẬN TIỀN
 const MOMO_PHONE_NUMBER = import.meta.env.VITE_MOMO_PHONE; 
 
-// CONFIG CÁC TÔNG MÀU NEON CAO CẤP (Đổi TOÀN BỘ tông nền, khung và chữ của trang web)
+// CONFIG CÁC TÔNG MÀU NEON CAO CẤP
 const THEMES = {
   pink: {
     name: 'Hồng Neon',
@@ -36,7 +36,6 @@ const THEMES = {
     textPriceLightMode: 'text-pink-600',
     focusRing: 'focus:ring-pink-500',
     
-    // Tông nền trang và khung thẻ
     bgPageDark: 'bg-[#0B0F19]',
     bgPageLight: 'bg-[#FFF0F5]',
     bgCardDark: 'bg-slate-900/40 border-white/10',
@@ -63,7 +62,6 @@ const THEMES = {
     textPriceLightMode: 'text-[#D96B7E]',
     focusRing: 'focus:ring-[#FFA0B4]',
     
-    // Tông nền trang và khung thẻ Sakura
     bgPageDark: 'bg-[#1F1215]',
     bgPageLight: 'bg-[#FFF5F6]',
     bgCardDark: 'bg-[#2D1A1E]/80 border-[#FFB7C5]/10',
@@ -90,7 +88,6 @@ const THEMES = {
     textPriceLightMode: 'text-[#D92A3A]',
     focusRing: 'focus:ring-[#FF4B5C]',
     
-    // Tông nền trang và khung thẻ Dưa Hấu
     bgPageDark: 'bg-[#061811]',
     bgPageLight: 'bg-[#F0FDF4]',
     bgCardDark: 'bg-[#0E281F]/80 border-[#05DF97]/10',
@@ -233,6 +230,13 @@ export default function ClientBid() {
   const [showThemePanel, setShowThemePanel] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
 
+  // Gamification states
+  const [pricePulse, setPricePulse] = useState(false);
+  const [particles, setParticles] = useState([]);
+  const [themeParticles, setThemeParticles] = useState([]);
+  const [isLast30Seconds, setIsLast30Seconds] = useState(false);
+  const [payTimeLeft, setPayTimeLeft] = useState('');
+
   useEffect(() => {
     const savedTheme = localStorage.getItem('clientThemeKey');
     if (savedTheme && THEMES[savedTheme]) {
@@ -251,6 +255,155 @@ export default function ClientBid() {
     setIsDarkMode(newMode);
     localStorage.setItem('clientThemeMode', newMode ? 'dark' : 'light');
   };
+
+  // SOUND SYNTHESIS FEEDBACK USING WEB AUDIO API
+  const playChime = (type = 'success') => {
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      
+      if (type === 'success') {
+        const playTone = (freq, time, duration) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, time);
+          gain.gain.setValueAtTime(0.08, time);
+          gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(time);
+          osc.stop(time + duration);
+        };
+        playTone(523.25, audioCtx.currentTime, 0.35); // C5
+        playTone(783.99, audioCtx.currentTime + 0.08, 0.45); // G5
+      } else if (type === 'warning') {
+        const playTone = (freq, time, duration) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, time);
+          gain.gain.setValueAtTime(0.08, time);
+          gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(time);
+          osc.stop(time + duration);
+        };
+        playTone(329.63, audioCtx.currentTime, 0.25); // E4
+        playTone(261.63, audioCtx.currentTime + 0.08, 0.35); // C4
+      }
+    } catch (e) {
+      console.warn('AudioContext blocked or not supported:', e);
+    }
+  };
+
+  // REACT CONFETTI BURST ANIMATION
+  const triggerConfetti = () => {
+    const newParticles = Array.from({ length: 60 }).map((_, i) => ({
+      id: Math.random() + i,
+      x: Math.random() * 100, // percentage left
+      size: Math.random() * 8 + 6,
+      color: ['#FFC0CB', '#FF69B4', '#FF1493', '#00FFFF', '#39FF14', '#FFD700', '#FF4500'][Math.floor(Math.random() * 7)],
+      delay: Math.random() * 1.5,
+      duration: Math.random() * 2 + 1.8,
+      rotation: Math.random() * 360
+    }));
+    setParticles(newParticles);
+    setTimeout(() => setParticles([]), 4000);
+  };
+
+  // TICK SOUND GENERATOR
+  const playTickSound = () => {
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.015, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.05);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.05);
+    } catch (e) {
+      // Autoplay blocked
+    }
+  };
+
+  // COPY HELPER
+  const handleCopy = (text, label) => {
+    navigator.clipboard.writeText(text);
+    toast.success(`Đã sao chép ${label}!`);
+  };
+
+  // GENERATE THEME PARTICLES
+  useEffect(() => {
+    let count = 0;
+    if (selectedThemeKey === 'sakura') count = 25;
+    else if (selectedThemeKey === 'watermelon') count = 20;
+    else if (selectedThemeKey === 'matrix') count = 20;
+    else if (selectedThemeKey === 'cyber') count = 15;
+    else if (['pink', 'amber', 'purple'].includes(selectedThemeKey)) count = 25;
+    
+    if (count === 0) {
+      setThemeParticles([]);
+      return;
+    }
+    
+    const items = Array.from({ length: count }).map((_, i) => {
+      const size = selectedThemeKey === 'matrix' ? Math.random() * 8 + 10 : Math.random() * 12 + 8;
+      const speed = selectedThemeKey === 'matrix' ? Math.random() * 3 + 2 : Math.random() * 8 + 4;
+      const opacity = Math.random() * 0.35 + 0.15;
+      
+      let content = '✨';
+      if (selectedThemeKey === 'sakura') {
+        content = ['🌸', '💮', '💖'][Math.floor(Math.random() * 3)];
+      } else if (selectedThemeKey === 'watermelon') {
+        content = ['🍉', '💧', '🟢'][Math.floor(Math.random() * 3)];
+      } else if (selectedThemeKey === 'matrix') {
+        content = String.fromCharCode(33 + Math.floor(Math.random() * 93));
+      } else if (selectedThemeKey === 'cyber') {
+        content = ['⚡', '🤖', '✨'][Math.floor(Math.random() * 3)];
+      }
+      
+      return {
+        id: i,
+        x: Math.random() * 100,
+        y: Math.random() * 100,
+        size,
+        speed,
+        delay: Math.random() * -20,
+        opacity,
+        content
+      };
+    });
+    setThemeParticles(items);
+  }, [selectedThemeKey]);
+
+  // COUNTDOWN FOR WINNER PAYMENT (24H DEADLINE)
+  useEffect(() => {
+    if (!isWinner || !commission?.end_time) return;
+
+    const interval = setInterval(() => {
+      const accurateNow = new Date(new Date().getTime() - serverTimeOffset);
+      const endTime = new Date(commission.end_time);
+      const deadline = new Date(endTime.getTime() + 24 * 60 * 60 * 1000); // 24 hours later
+      const diff = deadline - accurateNow;
+
+      if (diff <= 0) {
+        setPayTimeLeft('Đã hết hạn thanh toán!');
+        clearInterval(interval);
+      } else {
+        const h = Math.floor(diff / (1000 * 60 * 60));
+        const m = Math.floor((diff / (1000 * 60)) % 60);
+        const s = Math.floor((diff / 1000) % 60);
+        setPayTimeLeft(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isWinner, commission, serverTimeOffset]);
 
   // 1. Hàm gọi API bọc trong useCallback để dùng lại mượt mà
   const fetchActiveCom = useCallback(async () => {
@@ -286,7 +439,6 @@ export default function ClientBid() {
     const savedName = localStorage.getItem('bidderName');
     if (savedToken && savedId) { setBidderToken(savedToken); setBidderId(savedId); setBidderName(savedName); }
 
-    // Dù có Com hay không vẫn phải hóng thông báo từ Admin
     if (socket) {
       socket.on('global-update', fetchActiveCom);
     }
@@ -304,6 +456,7 @@ export default function ClientBid() {
     const interval = setInterval(() => {
       if (commission.status === 'closed') {
         setTimeLeft({ d: '00', h: '00', m: '00', s: '00' });
+        setIsLast30Seconds(false);
         clearInterval(interval);
         return;
       }
@@ -314,6 +467,7 @@ export default function ClientBid() {
       
       if (difference <= 0) {
         setTimeLeft({ d: '00', h: '00', m: '00', s: '00' });
+        setIsLast30Seconds(false);
         clearInterval(interval);
         fetchActiveCom();
       } else {
@@ -327,6 +481,14 @@ export default function ClientBid() {
           m: m.toString().padStart(2, '0'),
           s: s.toString().padStart(2, '0')
         });
+
+        // Tick sound and flash red UI for final 30 seconds of an active commission
+        if (commission.status === 'active' && d === 0 && h === 0 && m === 0 && s < 30) {
+          setIsLast30Seconds(true);
+          playTickSound();
+        } else {
+          setIsLast30Seconds(false);
+        }
       }
     }, 1000);
 
@@ -343,22 +505,44 @@ export default function ClientBid() {
         setCurrentPrice(data.currentPrice);
         const minIncrease = parseFloat(commission.min_increase) || 20000;
         setCustomBid(parseFloat(data.currentPrice) + minIncrease);
+        
+        // Trigger visual sparkle update
+        setPricePulse(true);
+        setTimeout(() => setPricePulse(false), 800);
       }
       if (data.status) setCommission(prev => ({ ...prev, status: data.status }));
       
       if (data.refreshHistory) {
         fetch(`${API_URL}/api/commissions/${commission.id}/history`)
           .then(r => r.json())
-          .then(ans => setBidHistory(ans));
+          .then(ans => {
+            // Check outbid trigger
+            const currentBidderId = localStorage.getItem('bidderId');
+            if (ans.length > 0 && currentBidderId && String(ans[0].bidder_id) !== String(currentBidderId)) {
+              if (bidHistory.length > 0 && String(bidHistory[0].bidder_id) === String(currentBidderId)) {
+                playChime('warning');
+                toast('⚠️ Bạn đã bị vượt mặt!', { icon: '🔔' });
+              }
+            }
+            setBidHistory(ans);
+          });
         fetchActiveCom();
       } else if (data.newBid) {
+        // Play outbid warning sound if applicable
+        const currentBidderId = localStorage.getItem('bidderId');
+        if (currentBidderId && String(data.newBid.bidder_id) !== String(currentBidderId)) {
+          if (bidHistory.length > 0 && String(bidHistory[0].bidder_id) === String(currentBidderId)) {
+            playChime('warning');
+            toast('⚠️ Bạn đã bị vượt mặt!', { icon: '🔔' });
+          }
+        }
         setBidHistory(prev => [data.newBid, ...prev].slice(0, 5));
       }
     };
 
     socket.on(channel, handleLocalUpdate);
     return () => { socket.off(channel, handleLocalUpdate); };
-  }, [commission, socket]);
+  }, [commission, socket, bidHistory]);
 
   // 5. Xử lý Đăng ký
   const handleRegister = async (e) => {
@@ -383,6 +567,7 @@ export default function ClientBid() {
         setBidderName(ans.full_name);
         setShowForm(false);
         toast.success('Đăng ký thành công!');
+        playChime('success');
       }
     } catch (error) {
       console.error(error);
@@ -433,6 +618,8 @@ export default function ClientBid() {
         toast.error(ans.error || 'Thao tác thất bại');
       } else {
         toast.success(isAutoBuy ? 'Mua đứt thành công! 🎉' : 'Đặt bid thành công! 🔥');
+        triggerConfetti();
+        playChime('success');
       }
     } catch (error) {
       console.error(error);
@@ -450,7 +637,20 @@ export default function ClientBid() {
   const topBid = bidHistory[0];
   const isWinner = isClosed && commission && String(commission.winner_bidder_id) === String(bidderId);
 
-  // --- RENDER ---
+  // PHẦN TRĂM TIẾN TRÌNH ĐẾN AB (MUA ĐỨT) & BƯỚC GIÁ NHANH
+  const startPrice = commission ? parseFloat(commission.start_price) || 0 : 0;
+  const autoBuyPrice = commission ? parseFloat(commission.auto_buy_price) || 1000000 : 1000000;
+  const curPrice = parseFloat(currentPrice) || startPrice;
+  const progressPercent = Math.min(100, Math.max(0, ((curPrice - startPrice) / (autoBuyPrice - startPrice)) * 100));
+
+  const minIncrease = commission ? parseFloat(commission.min_increase) || 20000 : 20000;
+  const quickIncrements = [
+    minIncrease,
+    minIncrease * 2.5,
+    minIncrease * 5,
+    minIncrease * 10
+  ];
+
   if (!commission) {
     return (
       <div className={`flex items-center justify-center min-h-screen ${isDarkMode ? theme.bgPageDark : theme.bgPageLight} transition-colors duration-500`}>
@@ -462,9 +662,116 @@ export default function ClientBid() {
   return (
     <div className={`min-h-screen ${isDarkMode ? theme.bgPageDark : theme.bgPageLight} ${isDarkMode ? theme.textBodyDark : theme.textBodyLight} font-sans relative overflow-hidden transition-all duration-500`}>
       
+      {/* CONFETTI & PREMIUM THEME ANIMATION STYLES */}
+      <style>{`
+        @keyframes fall {
+          0% {
+            transform: translateY(-50px) rotate(0deg);
+            opacity: 1;
+          }
+          100% {
+            transform: translateY(105vh) rotate(720deg);
+            opacity: 0;
+          }
+        }
+        @keyframes floatOrb1 {
+          0% { transform: translate(0px, 0px) scale(1); }
+          33% { transform: translate(40px, -60px) scale(1.15); }
+          66% { transform: translate(-30px, 30px) scale(0.9); }
+          100% { transform: translate(0px, 0px) scale(1); }
+        }
+        @keyframes floatOrb2 {
+          0% { transform: translate(0px, 0px) scale(1); }
+          50% { transform: translate(-50px, 50px) scale(0.95); }
+          100% { transform: translate(0px, 0px) scale(1); }
+        }
+        @keyframes sakuraFall {
+          0% { transform: translateY(-10vh) translateX(0) rotate(0deg); }
+          50% { transform: translateY(50vh) translateX(60px) rotate(180deg); }
+          100% { transform: translateY(110vh) translateX(-30px) rotate(360deg); }
+        }
+        @keyframes watermelonFloat {
+          0% { transform: translateY(110vh) scale(0.8); opacity: 0; }
+          10% { opacity: 0.65; }
+          90% { opacity: 0.65; }
+          100% { transform: translateY(-10vh) scale(1.2); opacity: 0; }
+        }
+        @keyframes matrixRain {
+          0% { transform: translateY(-20vh); opacity: 1; }
+          100% { transform: translateY(120vh); opacity: 0; }
+        }
+        @keyframes gridScan {
+          0% { top: 0%; }
+          100% { top: 100%; }
+        }
+        @keyframes sparkleFloat {
+          0% { transform: translateY(105vh) translateX(0) scale(0.5); opacity: 0; }
+          50% { opacity: 0.8; }
+          100% { transform: translateY(-5vh) translateX(30px) scale(1.1); opacity: 0; }
+        }
+        @keyframes pulseLive {
+          0% { transform: scale(1); opacity: 0.5; }
+          50% { transform: scale(1.35); opacity: 1; }
+          100% { transform: scale(1); opacity: 0.5; }
+        }
+      `}</style>
+
+      {/* Confetti Rendering */}
+      {particles.map(p => (
+        <div 
+          key={p.id}
+          className="fixed z-[999] pointer-events-none"
+          style={{
+            left: `${p.x}%`,
+            top: 0,
+            width: `${p.size}px`,
+            height: `${p.size}px`,
+            backgroundColor: p.color,
+            borderRadius: p.id % 3 === 0 ? '50%' : p.id % 3 === 1 ? '4px' : '0px',
+            animation: `fall ${p.duration}s linear ${p.delay}s forwards`,
+            transform: `rotate(${p.rotation}deg)`
+          }}
+        />
+      ))}
+
+      {/* Theme Particles / Falling Effects */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-[5]">
+        {themeParticles.map(p => (
+          <div
+            key={p.id}
+            className="absolute select-none font-bold"
+            style={{
+              left: `${p.x}%`,
+              top: 0,
+              fontSize: `${p.size}px`,
+              opacity: p.opacity,
+              animation: selectedThemeKey === 'sakura' ? `sakuraFall ${p.speed}s linear ${p.delay}s infinite`
+                         : selectedThemeKey === 'watermelon' ? `watermelonFloat ${p.speed}s linear ${p.delay}s infinite`
+                         : selectedThemeKey === 'matrix' ? `matrixRain ${p.speed}s linear ${p.delay}s infinite`
+                         : `sparkleFloat ${p.speed}s linear ${p.delay}s infinite`,
+              color: selectedThemeKey === 'matrix' ? '#10B981' : undefined
+            }}
+          >
+            {p.content}
+          </div>
+        ))}
+        {selectedThemeKey === 'cyber' && (
+          <div 
+            className="absolute inset-x-0 h-[2px] bg-cyan-500/20 pointer-events-none"
+            style={{ animation: 'gridScan 6s linear infinite' }}
+          />
+        )}
+      </div>
+
       {/* Background Soft Neon Glows */}
-      <div className={`absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full ${theme.glow1} blur-[120px] pointer-events-none transition-all duration-500`} />
-      <div className={`absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full ${theme.glow2} blur-[120px] pointer-events-none transition-all duration-500`} />
+      <div 
+        className={`absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full ${theme.glow1} blur-[120px] pointer-events-none transition-all duration-500`} 
+        style={{ animation: 'floatOrb1 15s ease-in-out infinite' }}
+      />
+      <div 
+        className={`absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full ${theme.glow2} blur-[120px] pointer-events-none transition-all duration-500`} 
+        style={{ animation: 'floatOrb2 20s ease-in-out infinite' }}
+      />
 
       {/* HEADER */}
       <header className={`${isDarkMode ? 'bg-black/20 border-white/10' : 'bg-white/40 border-black/5 shadow-sm'} backdrop-blur-md sticky top-0 z-40 border-b transition-colors duration-500`}>
@@ -525,7 +832,7 @@ export default function ClientBid() {
                         }}
                         className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all font-bold text-xs ${
                           selectedThemeKey === key 
-                            ? isDarkMode ? 'bg-white/10 text-white border border-white/10' : 'bg-slate-100 text-slate-900 border border-slate-200'
+                            ? isDarkMode ? 'bg-white/10 text-white border-white/10' : 'bg-slate-100 text-slate-900 border border-slate-200'
                             : 'text-slate-400 hover:bg-white/5 hover:text-white border border-transparent'
                         }`}
                       >
@@ -603,10 +910,18 @@ export default function ClientBid() {
               </div>
 
               {/* ĐỒNG HỒ */}
-              <div className={`bg-gradient-to-r ${theme.primary} text-white p-4 sm:p-6 rounded-3xl mb-6 sm:mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between shadow-lg ${theme.shadow} transition-all duration-500`}>
+              <div className={`bg-gradient-to-r ${
+                isLast30Seconds 
+                  ? 'from-red-650 to-rose-600 animate-pulse border border-red-500 shadow-red-500/40 shadow-xl' 
+                  : theme.primary
+              } text-white p-4 sm:p-6 rounded-3xl mb-6 sm:mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between shadow-lg ${
+                isLast30Seconds ? 'shadow-red-500/30' : theme.shadow
+              } transition-all duration-500`}>
                 <div className="flex items-center gap-2.5 sm:gap-3 self-center sm:self-auto">
-                  <Clock size={20} className="opacity-80 sm:w-7 sm:h-7"/>
-                  <span className="font-bold text-xs sm:text-sm uppercase tracking-widest opacity-80">{isUpcoming ? 'Bắt đầu trong:' : 'Kết thúc trong:'}</span>
+                  <Clock size={20} className={`${isLast30Seconds ? 'animate-bounce' : 'opacity-80'} sm:w-7 sm:h-7`}/>
+                  <span className="font-bold text-xs sm:text-sm uppercase tracking-widest opacity-80">
+                    {isUpcoming ? 'Bắt đầu trong:' : isLast30Seconds ? '⏱️ SẮP HẾT GIỜ:' : 'Kết thúc trong:'}
+                  </span>
                 </div>
                 <div className="flex items-center gap-1 sm:gap-1.5 justify-center">
                   {[
@@ -630,7 +945,11 @@ export default function ClientBid() {
               }`}>
                 <div>
                   <p className={`text-xs font-bold uppercase tracking-widest mb-1 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Giá hiện tại</p>
-                  <h2 className={`text-4xl sm:text-6xl font-black tracking-tighter flex items-baseline ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                  <h2 className={`text-4xl sm:text-6xl font-black tracking-tighter flex items-baseline transition-all duration-300 ${
+                    pricePulse 
+                      ? 'scale-105 text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.95)]' 
+                      : isDarkMode ? 'text-white' : 'text-slate-900'
+                  }`}>
                     {parseFloat(currentPrice).toLocaleString('vi-VN')}
                     <span className={`text-xl sm:text-2xl ml-1 font-bold ${isDarkMode ? 'text-slate-400' : 'text-slate-400'}`}>đ</span>
                   </h2>
@@ -644,11 +963,64 @@ export default function ClientBid() {
                     }`}>{topBid.full_name[0]}</div>
                     <div className="text-left">
                       <p className="text-xs text-slate-400 font-medium">Bởi</p>
-                      <p className={`font-bold text-sm ${isDarkMode ? 'text-slate-200' : 'text-slate-805'}`}>{topBid.full_name}</p>
+                      <p className={`font-bold text-sm ${isDarkMode ? 'text-slate-200' : 'text-slate-855'}`}>{topBid.full_name}</p>
                     </div>
                   </div>
                 )}
               </div>
+
+              {/* AB PROGRESS BAR (MUA ĐỨT) */}
+              {!isClosed && !isUpcoming && (
+                <div className={`mb-6 p-4 rounded-2xl border transition-all duration-500 ${
+                  isDarkMode ? 'bg-black/10 border-white/5' : 'bg-white/30 border-black/5'
+                }`}>
+                  <div className="flex justify-between items-center text-xs font-black uppercase tracking-wider mb-2">
+                    <span className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>Tiến trình tới AB (Mua đứt)</span>
+                    <span className={isDarkMode ? theme.text : theme.textLightMode}>{progressPercent.toFixed(1)}%</span>
+                  </div>
+                  <div className={`w-full h-3 rounded-full overflow-hidden p-[2px] transition-all border ${
+                    isDarkMode ? 'bg-black/40 border-white/10' : 'bg-slate-200/50 border-slate-300/40'
+                  }`}>
+                    <div 
+                      className={`h-full rounded-full bg-gradient-to-r ${theme.primary} transition-all duration-500 relative`}
+                      style={{ width: `${progressPercent}%` }}
+                    >
+                      <div className="absolute inset-0 bg-white/20 animate-pulse" />
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 mt-2">
+                    <span>SB: {startPrice.toLocaleString('vi-VN')} đ</span>
+                    {progressPercent >= 75 ? (
+                      <span className="text-rose-500 font-extrabold animate-pulse">🔥 Sắp chạm mốc Mua Đứt!</span>
+                    ) : (
+                      <span>AB: {autoBuyPrice.toLocaleString('vi-VN')} đ</span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* TRẠNG THÁI DẪN ĐẦU / BỊ VƯỢT GIÁ CÁ NHÂN HÓA */}
+              {!isClosed && !isUpcoming && bidderId && (
+                <div className="mb-6 transition-all duration-300">
+                  {topBid && String(topBid.bidder_id) === String(bidderId) ? (
+                    <div className={`py-2 px-4 rounded-xl border flex items-center justify-center gap-2 text-xs font-black uppercase tracking-wider animate-pulse ${
+                      isDarkMode 
+                        ? 'bg-emerald-950/30 border-emerald-500/30 text-emerald-400' 
+                        : 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                    }`}>
+                      👑 Bạn đang là người dẫn đầu! Cố lên nhé!
+                    </div>
+                  ) : bidHistory.some(b => String(b.bidder_id) === String(bidderId)) ? (
+                    <div className={`py-2 px-4 rounded-xl border flex items-center justify-center gap-2 text-xs font-black uppercase tracking-wider animate-bounce ${
+                      isDarkMode 
+                        ? 'bg-rose-950/30 border-rose-500/30 text-rose-400' 
+                        : 'bg-rose-50 border-rose-250 text-rose-700'
+                    }`}>
+                      ⚠️ Bạn đã bị vượt giá! Đặt bid thêm để giành lại vị trí!
+                    </div>
+                  ) : null}
+                </div>
+              )}
               
               {/* ACTION AREA */}
               {isUpcoming ? (
@@ -657,6 +1029,31 @@ export default function ClientBid() {
                 </div>
               ) : !isClosed ? (
                 <div className="w-full space-y-4">
+                  {/* Quick-Bid Buttons */}
+                  <div className="grid grid-cols-4 gap-2">
+                    {quickIncrements.map((inc) => {
+                      const bidValue = parseFloat(currentPrice) + inc;
+                      return (
+                        <button
+                          key={inc}
+                          type="button"
+                          onClick={() => setCustomBid(bidValue)}
+                          className={`py-2.5 px-1 text-center font-black rounded-xl text-[10px] sm:text-xs border transition-all active:scale-95 ${
+                            parseFloat(customBid) === bidValue
+                              ? isDarkMode 
+                                ? `bg-white/10 text-white border-white/30 shadow-inner` 
+                                : `bg-slate-100 text-slate-950 border-slate-300 shadow-sm`
+                              : isDarkMode 
+                                ? 'bg-black/25 text-slate-400 hover:text-white border-white/5 hover:bg-white/5' 
+                                : 'bg-white/40 text-slate-600 hover:text-slate-900 border-black/5 hover:bg-slate-50'
+                          }`}
+                        >
+                          +{inc >= 1000 ? `${(inc / 1000).toLocaleString('vi-VN')}k` : inc}
+                        </button>
+                      );
+                    })}
+                  </div>
+
                   <div className="flex flex-col sm:flex-row gap-3">
                     <div className="relative w-full sm:flex-1">
                       <span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-lg">đ</span>
@@ -719,26 +1116,86 @@ export default function ClientBid() {
             }`}>
               <h3 className={`text-2xl sm:text-5xl font-black tracking-tighter mb-4 ${isDarkMode ? 'text-emerald-400' : 'text-emerald-700'}`}>🎉 CHÚC MỪNG BẠN ĐÃ CHIẾN THẮNG!</h3>
               <p className={`font-semibold text-sm sm:text-lg mb-6 sm:mb-8 max-w-xl mx-auto ${isDarkMode ? 'text-emerald-300' : 'text-slate-700'}`}>
-                Chúc mừng bạn đã trúng đấu giá! Vui lòng quét mã QR chuyển khoản bên dưới để đặt cọc trước 50% số tiền là <span className={`font-extrabold text-lg sm:text-2xl ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{(parseFloat(topBid.bid_amount) / 2).toLocaleString('vi-VN')} đ</span> (tổng giá trị trúng bid là {parseFloat(topBid.bid_amount).toLocaleString('vi-VN')} đ) trong vòng 24 giờ nhé.
+                Chúc mừng bạn đã trúng đấu giá! Vui lòng quét mã QR chuyển khoản bên dưới hoặc sử dụng thông tin chuyển khoản để đặt cọc trước 50% số tiền đặt cọc trong vòng 24 giờ nhé.
               </p>
               
-              {MOMO_PHONE_NUMBER ? (
-                <div className={`p-4 sm:p-6 rounded-[2rem] inline-block shadow-lg border max-w-full transition-colors duration-500 ${
-                  isDarkMode ? 'bg-white border-emerald-500/30 shadow-black/40' : 'bg-white border-emerald-100 shadow-slate-100'
-                }`}>
-                  <img
-                    src={`https://img.vietqr.io/image/MBBANK-${MOMO_PHONE_NUMBER}-compact2.png?amount=${topBid.bid_amount / 2}&addInfo=Coc 50% Com ${commission.title.replace(/ /g, '%20')}`}
-                    alt="VietQR"
-                    className="mx-auto w-52 h-52 sm:w-64 sm:h-64 object-contain"
-                  />
+              <div className="max-w-2xl mx-auto flex flex-col md:flex-row gap-6 items-center justify-center mb-6">
+                {MOMO_PHONE_NUMBER ? (
+                  <div className="p-4 rounded-[2rem] shadow-lg border shrink-0 bg-white border-emerald-100 shadow-slate-100">
+                    <img
+                      src={`https://img.vietqr.io/image/MBBANK-${MOMO_PHONE_NUMBER}-compact2.png?amount=${topBid.bid_amount / 2}&addInfo=Coc%2050%25%20Com%20${commission.title.replace(/ /g, '%20')}`}
+                      alt="VietQR"
+                      className="w-48 h-48 sm:w-56 sm:h-56 object-contain mx-auto"
+                    />
+                  </div>
+                ) : (
+                  <div className={`border-2 p-4 rounded-2xl ${
+                    isDarkMode ? 'bg-yellow-950/40 border-yellow-500/30 text-yellow-300' : 'bg-yellow-50 border-yellow-450 text-yellow-800'
+                  }`}>
+                    ⚠️ Không tìm thấy SĐT MoMo/STK mặc định. Vui lòng liên hệ Admin.
+                  </div>
+                )}
+
+                <div className="flex-1 w-full text-left space-y-3">
+                  <div className={`p-4 rounded-2xl border transition-colors duration-500 ${
+                    isDarkMode ? 'bg-black/20 border-white/10' : 'bg-white border-slate-200 shadow-sm'
+                  }`}>
+                    <span className="text-xs text-slate-400 font-bold block mb-1">Thời gian thanh toán còn lại:</span>
+                    <span className="text-xl sm:text-2xl font-black tracking-wider text-rose-500 animate-pulse">{payTimeLeft}</span>
+                  </div>
+
+                  <div className={`p-4 rounded-2xl border space-y-3.5 transition-colors duration-500 ${
+                    isDarkMode ? 'bg-black/25 border-white/5' : 'bg-white border-slate-100 shadow-sm'
+                  }`}>
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <span className="text-[10px] text-slate-400 font-bold block">Số tài khoản / MoMo:</span>
+                        <span className={`font-black text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{MOMO_PHONE_NUMBER || 'Chưa cấu hình'}</span>
+                      </div>
+                      {MOMO_PHONE_NUMBER && (
+                        <button 
+                          onClick={() => handleCopy(MOMO_PHONE_NUMBER, 'Số tài khoản')}
+                          className={`text-xs px-3 py-1.5 rounded-lg border font-bold transition-all active:scale-95 ${
+                            isDarkMode ? 'bg-white/5 border-white/10 text-white hover:bg-white/10' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                          }`}
+                        >
+                          Copy
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="flex justify-between items-center border-t border-dashed border-slate-800/10 pt-2">
+                      <div>
+                        <span className="text-[10px] text-slate-400 font-bold block">Số tiền cần đặt cọc (50%):</span>
+                        <span className="font-black text-sm sm:text-base text-rose-500">{(parseFloat(topBid.bid_amount) / 2).toLocaleString('vi-VN')} đ</span>
+                      </div>
+                      <button 
+                        onClick={() => handleCopy((parseFloat(topBid.bid_amount) / 2).toString(), 'Số tiền cọc')}
+                        className={`text-xs px-3 py-1.5 rounded-lg border font-bold transition-all active:scale-95 ${
+                          isDarkMode ? 'bg-white/5 border-white/10 text-white hover:bg-white/10' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                        }`}
+                      >
+                        Copy
+                      </button>
+                    </div>
+
+                    <div className="flex justify-between items-center border-t border-dashed border-slate-800/10 pt-2">
+                      <div>
+                        <span className="text-[10px] text-slate-400 font-bold block">Nội dung chuyển khoản:</span>
+                        <span className={`font-black text-xs sm:text-sm ${isDarkMode ? 'text-slate-200' : 'text-slate-805'}`}>Coc 50% Com {commission.title}</span>
+                      </div>
+                      <button 
+                        onClick={() => handleCopy(`Coc 50% Com ${commission.title}`, 'Nội dung')}
+                        className={`text-xs px-3 py-1.5 rounded-lg border font-bold transition-all active:scale-95 ${
+                          isDarkMode ? 'bg-white/5 border-white/10 text-white hover:bg-white/10' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                        }`}
+                      >
+                        Copy
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              ) : (
-                <div className={`border-2 p-4 sm:p-6 rounded-2xl transition-colors duration-500 ${
-                  isDarkMode ? 'bg-yellow-950/40 border-yellow-500/30 text-yellow-300' : 'bg-yellow-50 border-yellow-400 text-yellow-800'
-                }`}>
-                  ⚠️ Không tìm thấy số tài khoản. Vui lòng liên hệ admin để thanh toán!
-                </div>
-              )}
+              </div>
             </div>
           )}
 
@@ -778,12 +1235,25 @@ export default function ClientBid() {
         <div className={`p-5 sm:p-8 rounded-3xl sm:rounded-[2.5rem] shadow-lg h-fit lg:sticky lg:top-28 border transition-all duration-500 ${
           isDarkMode ? theme.bgCardDark : theme.bgCardLight
         }`}>
-          <h3 className={`text-base sm:text-lg font-bold mb-6 sm:mb-8 flex items-center gap-2 transition-colors duration-500 ${
-            isDarkMode ? 'text-white' : 'text-slate-950'
-          }`}>
-            <Zap size={20} className={`${theme.text} animate-pulse transition-colors duration-500`}/>
-            Lịch sử đấu giá trực tiếp
-          </h3>
+          <div className="flex items-center justify-between mb-6 sm:mb-8">
+            <h3 className={`text-base sm:text-lg font-bold flex items-center gap-2 transition-colors duration-500 ${
+              isDarkMode ? 'text-white' : 'text-slate-950'
+            }`}>
+              <Zap size={20} className={`${theme.text} animate-pulse transition-colors duration-500`}/>
+              Lịch sử đấu giá
+            </h3>
+            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-black uppercase tracking-wider ${
+              isDarkMode 
+                ? 'bg-emerald-950/40 border-emerald-500/30 text-emerald-450' 
+                : 'bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm'
+            }`}>
+              <span 
+                className="w-2 h-2 rounded-full bg-emerald-500" 
+                style={{ animation: 'pulseLive 2s infinite' }}
+              />
+              Live
+            </div>
+          </div>
           <div className="space-y-4 sm:space-y-5">
             {bidHistory.map((bid, index) => {
               const isABWinner = (bid.isAutoBuy || (index === 0 && commission?.status === 'closed'));
@@ -812,7 +1282,7 @@ export default function ClientBid() {
                         ? 'text-white' 
                         : index === 0 && !isClosed 
                           ? isDarkMode ? theme.textPrice : theme.textPriceLightMode 
-                          : isDarkMode ? 'text-slate-200' : 'text-slate-800'
+                          : isDarkMode ? 'text-slate-200' : 'text-slate-850'
                     }`}>
                       {parseFloat(bid.bid_amount).toLocaleString('vi-VN')} đ
                     </div>
