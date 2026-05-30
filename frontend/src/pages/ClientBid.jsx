@@ -236,6 +236,7 @@ export default function ClientBid() {
   const [themeParticles, setThemeParticles] = useState([]);
   const [isLast30Seconds, setIsLast30Seconds] = useState(false);
   const [payTimeLeft, setPayTimeLeft] = useState('');
+  const [showRulesPopup, setShowRulesPopup] = useState(false);
 
   // --- LOGIC CHECK TRẠNG THÁI ---
   const accurateNowForCheck = new Date(new Date().getTime() - serverTimeOffset);
@@ -246,6 +247,7 @@ export default function ClientBid() {
   const isWinner = isClosed && commission && String(commission.winner_bidder_id) === String(bidderId);
 
   useEffect(() => {
+    document.title = "OnigiriComAuction";
     const savedTheme = localStorage.getItem('clientThemeKey');
     if (savedTheme && THEMES[savedTheme]) {
       setSelectedThemeKey(savedTheme);
@@ -412,6 +414,23 @@ export default function ClientBid() {
 
     return () => clearInterval(interval);
   }, [isWinner, commission, serverTimeOffset]);
+
+  // HIỂN THỊ POPUP NỘI QUY KHI KHÁCH TRUY CẬP LẦN ĐẦU (MỖI ĐỢT COMMISSION)
+  useEffect(() => {
+    if (commission) {
+      const seen = localStorage.getItem('seenRules-' + commission.id);
+      if (!seen) {
+        setShowRulesPopup(true);
+      }
+    }
+  }, [commission]);
+
+  const closeRulesPopup = () => {
+    if (commission) {
+      localStorage.setItem('seenRules-' + commission.id, 'true');
+    }
+    setShowRulesPopup(false);
+  };
 
   // 1. Hàm gọi API bọc trong useCallback để dùng lại mượt mà
   const fetchActiveCom = useCallback(async () => {
@@ -783,7 +802,7 @@ export default function ClientBid() {
               <Gavel size={18} className="sm:w-[22px] sm:h-[22px]"/>
             </div>
             <span className={`text-lg sm:text-2xl font-black tracking-tighter uppercase ${isDarkMode ? 'text-white' : 'text-slate-800'} transition-colors duration-500`}>
-              Ngọc<span className={`${theme.text} transition-colors duration-500`}>Com</span>Auction
+              ONIGIRI<span className={`${theme.text} transition-colors duration-500`}>Com</span>Auction
             </span>
           </div>
           
@@ -1360,9 +1379,56 @@ export default function ClientBid() {
       <footer className={`max-w-[1600px] mx-auto px-6 py-10 mt-10 border-t text-center text-xs font-medium transition-colors duration-500 ${
         isDarkMode ? 'border-white/10 text-slate-400' : 'border-black/5 text-slate-500'
       }`}>
-        <p>&copy; {new Date().getFullYear()} NgocComAuction. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} OnigiriComAuction. All rights reserved.</p>
         <p className="mt-1">Powered by React & Node.js</p>
       </footer>
+
+      {/* POPUP RULES / NỘI QUY KHI TRUY CẬP */}
+      {showRulesPopup && (
+        <div className={`fixed inset-0 ${isDarkMode ? 'bg-slate-950/80' : 'bg-slate-900/60'} backdrop-blur-sm flex justify-center items-center p-4 z-[60] transition-all animate-in fade-in duration-200`}>
+          <div className={`border p-6 sm:p-10 rounded-3xl sm:rounded-[2.5rem] shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto transform transition-all animate-in zoom-in-95 duration-200 ${
+            isDarkMode ? 'bg-[#0D1424] border-white/10 text-white' : 'bg-white border-slate-200 text-slate-800'
+          }`}>
+            <div className="text-center mb-6 sm:mb-8">
+              <div className={`w-12 h-12 sm:w-16 sm:h-16 ${theme.bgBadge} ${theme.text} border ${theme.border} rounded-2xl sm:rounded-3xl flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-lg ${theme.shadow} transition-all duration-500`}>
+                <Gavel size={28} className="sm:w-8 sm:h-8"/>
+              </div>
+              <h3 className={`text-2xl sm:text-3xl font-black tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Quy Định Đấu Giá</h3>
+              <p className={`mt-2 text-xs sm:text-sm max-w-xs mx-auto ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Vui lòng đọc kỹ nội quy của phiên đấu giá trước khi tham gia nhé!</p>
+            </div>
+            
+            <div className="space-y-4 mb-6 sm:mb-8">
+              {[
+                { label: 'Giá khởi điểm (SB):', val: `${parseFloat(commission.start_price || 0).toLocaleString('vi-VN')} đ` },
+                { label: 'Bước giá tối thiểu (MI):', val: `${parseFloat(commission.min_increase || 20000).toLocaleString('vi-VN')} đ${commission.max_increase ? ` - Tối đa: ${parseFloat(commission.max_increase).toLocaleString('vi-VN')} đ` : ''}` },
+                { label: 'Giá mua ngay (AB):', val: `${parseFloat(commission.auto_buy_price || 1000000).toLocaleString('vi-VN')} đ` },
+                { label: 'Quy định thanh toán:', val: commission.rule_payment },
+                { label: 'Quy định hủy lượt:', val: commission.rule_disqualify },
+                { label: 'Mục đích sử dụng:', val: commission.rule_usage },
+              ].map((rule, idx) => (
+                <div key={idx} className={`p-3.5 sm:p-4 rounded-xl border transition-colors ${
+                  isDarkMode ? 'bg-black/35 border-white/5' : 'bg-slate-50 border-slate-200'
+                }`}>
+                  <span className={`block text-[10px] sm:text-xs font-black uppercase tracking-wider ${isDarkMode ? 'text-slate-400' : 'text-slate-500'} mb-1`}>
+                    {rule.label}
+                  </span>
+                  <span className={`text-xs sm:text-sm font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
+                    {rule.val}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <button 
+              type="button" 
+              onClick={closeRulesPopup} 
+              className={`w-full bg-gradient-to-r ${theme.primary} hover:${theme.primaryHover} text-white py-3.5 sm:py-4 rounded-2xl font-black text-base sm:text-lg transition-all shadow-lg ${theme.shadow} active:scale-95`}
+            >
+              Tôi đã hiểu và đồng ý
+            </button>
+          </div>
+        </div>
+      )}
 
     </div>
   );
