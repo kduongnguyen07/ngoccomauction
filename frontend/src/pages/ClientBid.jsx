@@ -15,6 +15,85 @@ const API_URL = (rawApiUrl.startsWith('http://') || rawApiUrl.startsWith('https:
 // SĐT MOMO NHẬN TIỀN
 const MOMO_PHONE_NUMBER = import.meta.env.VITE_MOMO_PHONE; 
 
+// CONFIG CÁC TÔNG MÀU NEON CAO CẤP
+const THEMES = {
+  pink: {
+    name: 'Hồng Neon',
+    primary: 'from-pink-500 to-rose-600',
+    primaryHover: 'from-pink-600 to-rose-700',
+    glow1: 'bg-pink-500/5',
+    glow2: 'bg-rose-500/5',
+    text: 'text-pink-500',
+    textLight: 'text-pink-300',
+    textHover: 'hover:text-pink-500',
+    border: 'border-pink-500/30',
+    bgBadge: 'bg-pink-950/40',
+    shadow: 'shadow-pink-500/20',
+    textPrice: 'text-pink-400',
+    focusRing: 'focus:ring-pink-500'
+  },
+  cyber: {
+    name: 'Cyan Cyberpunk',
+    primary: 'from-cyan-500 to-blue-600',
+    primaryHover: 'from-cyan-600 to-blue-700',
+    glow1: 'bg-cyan-500/5',
+    glow2: 'bg-blue-500/5',
+    text: 'text-cyan-400',
+    textLight: 'text-cyan-300',
+    textHover: 'hover:text-cyan-400',
+    border: 'border-cyan-500/30',
+    bgBadge: 'bg-cyan-950/40',
+    shadow: 'shadow-cyan-500/20',
+    textPrice: 'text-cyan-400',
+    focusRing: 'focus:ring-cyan-500'
+  },
+  matrix: {
+    name: 'Lục Matrix',
+    primary: 'from-emerald-500 to-teal-600',
+    primaryHover: 'from-emerald-600 to-teal-700',
+    glow1: 'bg-emerald-500/5',
+    glow2: 'bg-teal-500/5',
+    text: 'text-emerald-400',
+    textLight: 'text-emerald-300',
+    textHover: 'hover:text-emerald-400',
+    border: 'border-emerald-500/30',
+    bgBadge: 'bg-emerald-950/40',
+    shadow: 'shadow-emerald-500/20',
+    textPrice: 'text-emerald-400',
+    focusRing: 'focus:ring-emerald-500'
+  },
+  amber: {
+    name: 'Vàng Hoàng Kim',
+    primary: 'from-amber-500 to-orange-600',
+    primaryHover: 'from-amber-600 to-orange-700',
+    glow1: 'bg-amber-500/5',
+    glow2: 'bg-orange-500/5',
+    text: 'text-amber-500',
+    textLight: 'text-amber-300',
+    textHover: 'hover:text-amber-500',
+    border: 'border-amber-500/30',
+    bgBadge: 'bg-amber-950/40',
+    shadow: 'shadow-amber-500/20',
+    textPrice: 'text-amber-400',
+    focusRing: 'focus:ring-amber-500'
+  },
+  purple: {
+    name: 'Tím Hoàng Hôn',
+    primary: 'from-fuchsia-500 to-violet-600',
+    primaryHover: 'from-fuchsia-600 to-violet-700',
+    glow1: 'bg-fuchsia-500/5',
+    glow2: 'bg-violet-500/5',
+    text: 'text-fuchsia-500',
+    textLight: 'text-fuchsia-300',
+    textHover: 'hover:text-fuchsia-500',
+    border: 'border-fuchsia-500/30',
+    bgBadge: 'bg-fuchsia-950/40',
+    shadow: 'shadow-fuchsia-500/20',
+    textPrice: 'text-fuchsia-400',
+    focusRing: 'focus:ring-fuchsia-500'
+  }
+};
+
 export default function ClientBid() {
   const [socket, setSocket] = useState(null);
 
@@ -38,6 +117,19 @@ export default function ClientBid() {
   const [serverTimeOffset, setServerTimeOffset] = useState(0);
   const [customBid, setCustomBid] = useState('');
   const [formData, setFormData] = useState({ fullName: '', contactInfo: '' });
+
+  // Theme state
+  const [selectedThemeKey, setSelectedThemeKey] = useState('pink');
+  const [showThemePanel, setShowThemePanel] = useState(false);
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('clientThemeKey');
+    if (savedTheme && THEMES[savedTheme]) {
+      setSelectedThemeKey(savedTheme);
+    }
+  }, []);
+
+  const theme = THEMES[selectedThemeKey] || THEMES.pink;
 
   // 1. Hàm gọi API bọc trong useCallback để dùng lại mượt mà
   const fetchActiveCom = useCallback(async () => {
@@ -250,28 +342,75 @@ export default function ClientBid() {
     <div className="min-h-screen bg-[#0B0F19] text-[#E2E8F0] font-sans relative overflow-hidden">
       
       {/* Background Soft Neon Glows */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-pink-500/5 blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-violet-600/5 blur-[120px] pointer-events-none" />
+      <div className={`absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full ${theme.glow1} blur-[120px] pointer-events-none transition-all duration-500`} />
+      <div className={`absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full ${theme.glow2} blur-[120px] pointer-events-none transition-all duration-500`} />
 
       {/* HEADER */}
       <header className="bg-[#0D1424]/80 backdrop-blur-md sticky top-0 z-40 border-b border-white/10 shadow-lg">
-        <nav className="max-w-[1600px] mx-auto px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between">
+        <nav className="max-w-[1600px] mx-auto px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between relative">
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-pink-500 to-rose-600 rounded-xl sm:rounded-2xl flex items-center justify-center text-white shadow-lg shadow-pink-500/20">
+            <div className={`w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r ${theme.primary} rounded-xl sm:rounded-2xl flex items-center justify-center text-white shadow-lg ${theme.shadow} transition-all duration-500`}>
               <Gavel size={18} className="sm:w-[22px] sm:h-[22px]"/>
             </div>
-            <span className="text-lg sm:text-2xl font-black tracking-tighter uppercase text-white">Ngọc<span className="text-pink-500">Com</span>Auction</span>
+            <span className="text-lg sm:text-2xl font-black tracking-tighter uppercase text-white transition-colors duration-500">
+              Ngọc<span className={`${theme.text} transition-colors duration-500`}>Com</span>Auction
+            </span>
           </div>
           
           <div className="flex items-center gap-2 sm:gap-4">
+            {/* Tùy chỉnh màu sắc Button */}
+            <div className="relative">
+              <button 
+                onClick={() => setShowThemePanel(!showThemePanel)} 
+                className="p-2 bg-slate-800/80 hover:bg-slate-700 border border-white/10 rounded-full text-slate-300 hover:text-white transition-all active:scale-95 flex items-center justify-center"
+                title="Thay đổi màu sắc giao diện"
+              >
+                <Palette size={18}/>
+              </button>
+
+              {/* Bảng tùy chỉnh màu sắc */}
+              {showThemePanel && (
+                <div className="absolute right-0 top-12 z-50 bg-[#0F1626]/95 backdrop-blur-md border border-white/10 p-4 rounded-2xl shadow-2xl w-56 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider mb-3">Màu sắc giao diện</h4>
+                  <div className="space-y-2">
+                    {Object.entries(THEMES).map(([key, t]) => (
+                      <button
+                        key={key}
+                        onClick={() => {
+                          setSelectedThemeKey(key);
+                          localStorage.setItem('clientThemeKey', key);
+                        }}
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all font-bold text-xs ${
+                          selectedThemeKey === key 
+                            ? 'bg-white/10 text-white border border-white/10' 
+                            : 'text-slate-400 hover:bg-white/5 hover:text-white border border-transparent'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className={`w-3.5 h-3.5 rounded-full bg-gradient-to-r ${t.primary}`} />
+                          <span>{t.name}</span>
+                        </div>
+                        {selectedThemeKey === key && <span className={`${t.text} font-black text-sm`}>●</span>}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
             {bidderName ? (
               <div className="flex items-center gap-1.5 sm:gap-3 bg-slate-800/80 px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-full border border-white/10">
-                <div className="w-6 h-6 sm:w-9 sm:h-9 rounded-full bg-pink-900/60 flex items-center justify-center text-pink-300 font-bold text-[10px] sm:text-xs">{bidderName[0]}</div>
+                <div className={`w-6 h-6 sm:w-9 sm:h-9 rounded-full ${theme.bgBadge} ${theme.textLight} transition-all duration-500 flex items-center justify-center font-bold text-[10px] sm:text-xs`}>
+                  {bidderName[0]}
+                </div>
                 <span className="font-bold text-xs sm:text-sm text-slate-100 max-w-[80px] sm:max-w-none truncate">{bidderName}</span>
-                <button onClick={() => { localStorage.clear(); window.location.reload(); }} className="text-slate-400 hover:text-pink-500 p-0.5 transition-colors"><LogOut size={14} className="sm:w-4 sm:h-4"/></button>
+                <button onClick={() => { localStorage.clear(); window.location.reload(); }} className={`text-slate-400 ${theme.textHover} p-0.5 transition-colors`}><LogOut size={14} className="sm:w-4 sm:h-4"/></button>
               </div>
             ) : (
-              <button onClick={() => setShowForm(true)} className="flex items-center gap-1.5 bg-gradient-to-r from-pink-500 to-rose-600 text-white px-3.5 py-2 sm:px-6 sm:py-3 rounded-full font-bold text-xs sm:text-sm hover:from-pink-600 hover:to-rose-700 transition-all shadow-md active:scale-95">
+              <button 
+                onClick={() => setShowForm(true)} 
+                className={`flex items-center gap-1.5 bg-gradient-to-r ${theme.primary} hover:${theme.primaryHover} text-white px-3.5 py-2 sm:px-6 sm:py-3 rounded-full font-bold text-xs sm:text-sm transition-all duration-500 shadow-md active:scale-95`}
+              >
                 <User size={14} className="sm:w-[18px] sm:h-[18px]"/> Đăng nhập<span className="hidden sm:inline"> để Bid</span>
               </button>
             )}
@@ -285,7 +424,7 @@ export default function ClientBid() {
         {/* CỘT TRÁI (Main Auction Card) */}
         <div className="lg:col-span-2 space-y-6 sm:space-y-8 animate-in fade-in duration-500">
           
-          <div className="bg-slate-900/40 backdrop-blur-md border border-white/10 rounded-3xl sm:rounded-[2.5rem] shadow-2xl p-4 sm:p-5 gap-6 sm:gap-8 flex flex-col md:flex-row shadow-pink-500/5">
+          <div className={`bg-slate-900/40 backdrop-blur-md border border-white/10 rounded-3xl sm:rounded-[2.5rem] shadow-2xl p-4 sm:p-5 gap-6 sm:gap-8 flex flex-col md:flex-row shadow-pink-500/5 ${theme.shadow} transition-all duration-500`}>
             {/* Hình ảnh */}
             <div className="bg-slate-950/60 border border-white/10 rounded-2xl sm:rounded-[2rem] md:w-2/5 aspect-square flex items-center justify-center overflow-hidden shadow-inner">
               <img 
@@ -298,10 +437,10 @@ export default function ClientBid() {
             {/* Thông tin & Bid Section */}
             <div className="flex-1 flex flex-col justify-center py-2 sm:py-4">
               <div className="mb-4 sm:mb-6">
-                <span className={`inline-block px-3.5 py-1 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wider mb-2.5 sm:mb-3 ${
+                <span className={`inline-block px-3.5 py-1 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wider mb-2.5 sm:mb-3 transition-all duration-500 ${
                   isUpcoming ? 'bg-purple-950/40 text-purple-300 border border-purple-500/30 animate-pulse' : 
                   isClosed ? 'bg-slate-800 text-slate-400 border border-white/5' : 
-                  'bg-pink-950/40 text-pink-300 border border-pink-500/30'
+                  `${theme.bgBadge} ${theme.textLight} border ${theme.border}`
                 }`}>
                   {commission.phase} - {isUpcoming ? 'Sắp diễn ra' : isClosed ? 'Đã đóng' : 'Đang mở'}
                 </span>
@@ -309,7 +448,7 @@ export default function ClientBid() {
               </div>
 
               {/* ĐỒNG HỒ */}
-              <div className="bg-gradient-to-r from-pink-600 to-rose-700 text-white p-4 sm:p-6 rounded-3xl mb-6 sm:mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between shadow-lg shadow-pink-500/10">
+              <div className={`bg-gradient-to-r ${theme.primary} text-white p-4 sm:p-6 rounded-3xl mb-6 sm:mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between shadow-lg ${theme.shadow} transition-all duration-500`}>
                 <div className="flex items-center gap-2.5 sm:gap-3 self-center sm:self-auto">
                   <Clock size={20} className="opacity-80 sm:w-7 sm:h-7"/>
                   <span className="font-bold text-xs sm:text-sm uppercase tracking-widest opacity-80">{isUpcoming ? 'Bắt đầu trong:' : 'Kết thúc trong:'}</span>
@@ -364,13 +503,13 @@ export default function ClientBid() {
                         type="number" 
                         value={customBid}
                         onChange={(e) => setCustomBid(Number(e.target.value))}
-                        className="w-full pl-10 pr-4 py-4 sm:py-5 bg-slate-950/60 border border-white/10 text-white rounded-2xl focus:ring-2 focus:ring-pink-500 focus:outline-none font-bold text-lg sm:text-xl transition-all"
+                        className={`w-full pl-10 pr-4 py-4 sm:py-5 bg-slate-950/60 border border-white/10 text-white rounded-2xl focus:ring-2 ${theme.focusRing} focus:outline-none font-bold text-lg sm:text-xl transition-all`}
                       />
                     </div>
                     <button 
                       onClick={() => executeBid(customBid)} 
                       disabled={isBidding}
-                      className="w-full sm:flex-[1.5] bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white py-4 sm:py-5 px-4 rounded-2xl font-black text-base sm:text-lg transition-all shadow-lg shadow-pink-500/20 active:scale-95 disabled:opacity-50" 
+                      className={`w-full sm:flex-[1.5] bg-gradient-to-r ${theme.primary} hover:${theme.primaryHover} text-white py-4 sm:py-5 px-4 rounded-2xl font-black text-base sm:text-lg transition-all shadow-lg ${theme.shadow} active:scale-95 disabled:opacity-50`} 
                     >
                       {isBidding ? 'Đang xử lý...' : `Đấu giá (+${(parseFloat(commission.min_increase) || 20000).toLocaleString('vi-VN')} đ)`}
                     </button>
@@ -426,7 +565,9 @@ export default function ClientBid() {
 
           {/* RULES / TOS */}
           <div className="bg-slate-900/40 backdrop-blur-md border border-white/10 p-5 sm:p-8 rounded-3xl sm:rounded-[2.5rem] shadow-sm">
-            <h3 className="text-lg sm:text-xl font-bold text-white mb-4 sm:mb-6 pb-3 sm:pb-4 border-b border-white/5 flex items-center gap-2"><Zap size={20} className="text-pink-500 animate-pulse"/> Quy định & Hướng dẫn Đấu giá</h3>
+            <h3 className="text-lg sm:text-xl font-bold text-white mb-4 sm:mb-6 pb-3 sm:pb-4 border-b border-white/5 flex items-center gap-2">
+              <Zap size={20} className={`${theme.text} animate-pulse transition-colors duration-500`}/> Quy định & Hướng dẫn Đấu giá
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 sm:gap-x-10 gap-y-4 sm:gap-y-5 text-slate-300 font-medium text-xs sm:text-sm">
               {[
                 {icon: <Gavel size={16}/>, label: 'SB:', val: `${parseFloat(commission.start_price || 0).toLocaleString('vi-VN')} đ (Giá khởi điểm)`},
@@ -437,7 +578,7 @@ export default function ClientBid() {
                 {icon: <Info size={16}/>, label: 'Sử dụng:', val: commission.rule_usage || 'Mục đích cá nhân (Thương mại sẽ tính phí riêng)'},
               ].map(item => (
                 <div key={item.label} className="flex items-center gap-3 p-3 sm:p-4 bg-slate-950/60 rounded-xl border border-white/5">
-                  <div className="text-pink-500 shrink-0">{item.icon}</div>
+                  <div className={`${theme.text} shrink-0 transition-colors duration-500`}>{item.icon}</div>
                   <span className="font-extrabold text-white w-20 shrink-0">{item.label}</span>
                   <span className="text-slate-300">{item.val}</span>
                 </div>
@@ -449,7 +590,7 @@ export default function ClientBid() {
         {/* CỘT PHẢI (Bid History) */}
         <div className="bg-slate-900/40 backdrop-blur-md border border-white/10 p-5 sm:p-8 rounded-3xl sm:rounded-[2.5rem] shadow-lg h-fit lg:sticky lg:top-28">
           <h3 className="text-base sm:text-lg font-bold text-white mb-6 sm:mb-8 flex items-center gap-2">
-            <Zap size={20} className="text-pink-500 animate-pulse"/>
+            <Zap size={20} className={`${theme.text} animate-pulse transition-colors duration-500`}/>
             Lịch sử đấu giá trực tiếp
           </h3>
           <div className="space-y-4 sm:space-y-5">
@@ -457,26 +598,26 @@ export default function ClientBid() {
               const isABWinner = (bid.isAutoBuy || (index === 0 && commission?.status === 'closed'));
               return (
                 <div key={index} className={`flex items-center justify-between p-4 sm:p-5 rounded-xl sm:rounded-2xl transition-all ${
-                  index === 0 && !isClosed ? 'bg-pink-950/40 border border-pink-500/30 shadow-inner' : 
-                  isABWinner ? 'bg-gradient-to-r from-pink-950/60 to-rose-950/60 border border-pink-500/30 shadow-lg' : 
+                  index === 0 && !isClosed ? `${theme.bgBadge} border ${theme.border} shadow-inner` : 
+                  isABWinner ? `bg-gradient-to-r ${theme.primary} border ${theme.border} shadow-lg text-white` : 
                   'bg-slate-950/60 border border-white/5'
                 }`}>
                   <div className="flex items-center gap-3 sm:gap-4">
-                    <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-xs ${isABWinner ? 'bg-pink-600 text-white' : 'bg-slate-800 text-slate-400'}`}>{bid.full_name[0]}</div>
+                    <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-xs ${isABWinner ? 'bg-white text-slate-900' : 'bg-slate-800 text-slate-400'}`}>{bid.full_name[0]}</div>
                     <div>
-                      <p className="font-bold text-sm sm:text-base text-white">
+                      <p className={`font-bold text-sm sm:text-base ${isABWinner ? 'text-white' : 'text-white'}`}>
                         {bid.full_name} 
                       </p>
-                      <p className="text-[10px] sm:text-xs text-slate-400">
+                      <p className={`text-[10px] sm:text-xs ${isABWinner ? 'text-slate-200' : 'text-slate-400'}`}>
                         {new Date(bid.created_at).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'})} - {new Date(bid.created_at).toLocaleDateString('vi-VN', {day:'2-digit', month:'2-digit'})}
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className={`text-lg sm:text-2xl font-black tracking-tighter ${isABWinner ? 'text-pink-500' : index === 0 && !isClosed ? 'text-pink-400' : 'text-slate-200'}`}>
+                    <div className={`text-lg sm:text-2xl font-black tracking-tighter ${isABWinner ? 'text-white' : index === 0 && !isClosed ? theme.textPrice : 'text-slate-200'} transition-colors duration-500`}>
                       {parseFloat(bid.bid_amount).toLocaleString('vi-VN')} đ
                     </div>
-                    {isABWinner && <span className="inline-block text-[9px] font-black uppercase tracking-widest bg-pink-600 text-white px-2 py-0.5 rounded-full -mt-1">Winner</span>}
+                    {isABWinner && <span className={`inline-block text-[9px] font-black uppercase tracking-widest ${selectedThemeKey === 'pink' ? 'bg-white text-pink-600' : 'bg-white text-slate-900'} px-2 py-0.5 rounded-full -mt-1`}>Winner</span>}
                   </div>
                 </div>
               );
@@ -494,7 +635,7 @@ export default function ClientBid() {
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex justify-center items-center p-4 z-50 transition-all animate-in fade-in duration-200">
           <div className="bg-[#0D1424] border border-white/10 p-6 sm:p-10 rounded-3xl sm:rounded-[2.5rem] shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto transform transition-all animate-in zoom-in-95 duration-200">
             <div className="text-center mb-6 sm:mb-10">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-pink-950/40 text-pink-500 border border-pink-500/30 rounded-2xl sm:rounded-3xl flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-lg shadow-pink-500/20">
+              <div className={`w-12 h-12 sm:w-16 sm:h-16 ${theme.bgBadge} ${theme.text} border ${theme.border} rounded-2xl sm:rounded-3xl flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-lg ${theme.shadow} transition-all duration-500`}>
                 <User size={28} className="sm:w-8 sm:h-8"/>
               </div>
               <h3 className="text-2xl sm:text-3xl font-black tracking-tighter text-white">Chào mừng bạn!</h3>
@@ -507,7 +648,7 @@ export default function ClientBid() {
                 value={formData.fullName} 
                 onChange={(e) => setFormData({ ...formData, fullName: e.target.value })} 
                 required 
-                className="w-full px-4 sm:px-5 py-3 sm:py-4 bg-slate-950/60 border border-white/10 rounded-2xl focus:ring-2 focus:ring-pink-500 focus:outline-none font-bold text-base sm:text-lg text-white placeholder-slate-500"
+                className={`w-full px-4 sm:px-5 py-3 sm:py-4 bg-slate-950/60 border border-white/10 rounded-2xl focus:ring-2 ${theme.focusRing} focus:outline-none font-bold text-base sm:text-lg text-white placeholder-slate-500`}
               />
               <input 
                 type="text" 
@@ -515,10 +656,10 @@ export default function ClientBid() {
                 value={formData.contactInfo} 
                 onChange={(e) => setFormData({ ...formData, contactInfo: e.target.value })} 
                 required 
-                className="w-full px-4 sm:px-5 py-3 sm:py-4 bg-slate-950/60 border border-white/10 rounded-2xl focus:ring-2 focus:ring-pink-500 focus:outline-none font-bold text-base sm:text-lg text-white placeholder-slate-500"
+                className={`w-full px-4 sm:px-5 py-3 sm:py-4 bg-slate-950/60 border border-white/10 rounded-2xl focus:ring-2 ${theme.focusRing} focus:outline-none font-bold text-base sm:text-lg text-white placeholder-slate-500`}
               />
               <div className="flex gap-3 sm:gap-4 pt-3 sm:pt-4">
-                <button type="submit" className="flex-1 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white py-3 sm:py-4 rounded-2xl font-black text-base sm:text-lg transition-all shadow-lg shadow-pink-500/20 active:scale-95">
+                <button type="submit" className={`flex-1 bg-gradient-to-r ${theme.primary} hover:${theme.primaryHover} text-white py-3 sm:py-4 rounded-2xl font-black text-base sm:text-lg transition-all shadow-lg ${theme.shadow} active:scale-95`}>
                   Xác nhận
                 </button>
                 <button type="button" onClick={() => setShowForm(false)} className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-3 sm:py-4 rounded-2xl border border-white/10 font-black text-base sm:text-lg transition-colors active:scale-95">
