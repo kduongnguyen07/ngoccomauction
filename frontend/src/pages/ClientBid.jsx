@@ -43,6 +43,32 @@ const THEMES = {
     textBodyDark: 'text-[#E2E8F0]',
     textBodyLight: 'text-slate-800'
   },
+  lgbt: {
+    name: 'Cầu Vồng LGBT 🌈',
+    primary: 'from-red-500 via-yellow-500 via-green-500 via-blue-500 to-purple-500',
+    primaryHover: 'from-red-600 via-yellow-600 via-green-600 via-blue-600 to-purple-600',
+    glow1: 'bg-red-500/10',
+    glow2: 'bg-purple-500/10',
+    text: 'text-purple-400',
+    textLight: 'text-pink-300',
+    textLightMode: 'text-indigo-650',
+    textHover: 'hover:text-purple-400',
+    border: 'border-purple-500/30',
+    borderLightMode: 'border-purple-200',
+    bgBadge: 'bg-purple-950/40',
+    bgBadgeLightMode: 'bg-purple-50',
+    shadow: 'shadow-purple-500/20',
+    textPrice: 'text-purple-400',
+    textPriceLightMode: 'text-indigo-650',
+    focusRing: 'focus:ring-purple-500',
+    
+    bgPageDark: 'bg-[#0D0B1A]',
+    bgPageLight: 'bg-[#F5F3FF]',
+    bgCardDark: 'bg-[#130E26]/80 border-purple-500/10',
+    bgCardLight: 'bg-white/90 border-purple-200/60 shadow-purple-50/50',
+    textBodyDark: 'text-[#F1EEFE]',
+    textBodyLight: 'text-slate-800'
+  },
   sakura: {
     name: 'Sakura Anh Đào',
     primary: 'from-[#FFB7C5] to-[#FFA0B4]',
@@ -351,6 +377,7 @@ export default function ClientBid() {
   useEffect(() => {
     let count = 0;
     if (selectedThemeKey === 'sakura') count = 25;
+    else if (selectedThemeKey === 'lgbt') count = 30;
     else if (selectedThemeKey === 'watermelon') count = 20;
     else if (selectedThemeKey === 'matrix') count = 20;
     else if (selectedThemeKey === 'cyber') count = 15;
@@ -369,6 +396,8 @@ export default function ClientBid() {
       let content = '✨';
       if (selectedThemeKey === 'sakura') {
         content = ['🌸', '💮', '💖'][Math.floor(Math.random() * 3)];
+      } else if (selectedThemeKey === 'lgbt') {
+        content = ['❤️', '🧡', '💛', '💚', '💙', '💜'][Math.floor(Math.random() * 6)];
       } else if (selectedThemeKey === 'watermelon') {
         content = ['🍉', '💧', '🟢'][Math.floor(Math.random() * 3)];
       } else if (selectedThemeKey === 'matrix') {
