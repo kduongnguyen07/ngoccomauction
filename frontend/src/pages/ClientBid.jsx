@@ -69,6 +69,58 @@ const THEMES = {
     textBodyDark: 'text-[#F1EEFE]',
     textBodyLight: 'text-slate-800'
   },
+  casino: {
+    name: 'Las Vegas Đỏ Đen 🎲',
+    primary: 'from-red-600 to-stone-900',
+    primaryHover: 'from-red-700 to-black',
+    glow1: 'bg-red-500/10',
+    glow2: 'bg-stone-900/10',
+    text: 'text-red-500',
+    textLight: 'text-red-300',
+    textLightMode: 'text-red-650',
+    textHover: 'hover:text-red-500',
+    border: 'border-red-500/30',
+    borderLightMode: 'border-red-200',
+    bgBadge: 'bg-red-950/40',
+    bgBadgeLightMode: 'bg-red-50',
+    shadow: 'shadow-red-500/20',
+    textPrice: 'text-red-400',
+    textPriceLightMode: 'text-red-650',
+    focusRing: 'focus:ring-red-500',
+    
+    bgPageDark: 'bg-[#0B0404]',
+    bgPageLight: 'bg-[#FFF5F5]',
+    bgCardDark: 'bg-[#170808]/85 border-red-500/15',
+    bgCardLight: 'bg-white/90 border-red-200/60 shadow-red-50/50',
+    textBodyDark: 'text-[#FCEBEB]',
+    textBodyLight: 'text-slate-800'
+  },
+  fireice: {
+    name: 'Lửa & Băng ❄️🔥',
+    primary: 'from-cyan-500 to-rose-500',
+    primaryHover: 'from-cyan-600 to-rose-600',
+    glow1: 'bg-cyan-500/10',
+    glow2: 'bg-rose-500/10',
+    text: 'text-cyan-400',
+    textLight: 'text-rose-300',
+    textLightMode: 'text-cyan-650',
+    textHover: 'hover:text-cyan-400',
+    border: 'border-cyan-500/30',
+    borderLightMode: 'border-cyan-200',
+    bgBadge: 'bg-cyan-950/40',
+    bgBadgeLightMode: 'bg-cyan-50',
+    shadow: 'shadow-cyan-500/20',
+    textPrice: 'text-cyan-400',
+    textPriceLightMode: 'text-cyan-650',
+    focusRing: 'focus:ring-cyan-500',
+    
+    bgPageDark: 'bg-[#070B14]',
+    bgPageLight: 'bg-[#F0F8FF]',
+    bgCardDark: 'bg-[#0D1525]/85 border-cyan-500/15',
+    bgCardLight: 'bg-white/90 border-cyan-150 shadow-cyan-50/50',
+    textBodyDark: 'text-[#E6EEFC]',
+    textBodyLight: 'text-slate-800'
+  },
   sakura: {
     name: 'Sakura Anh Đào',
     primary: 'from-[#FFB7C5] to-[#FFA0B4]',
@@ -378,6 +430,8 @@ export default function ClientBid() {
     let count = 0;
     if (selectedThemeKey === 'sakura') count = 25;
     else if (selectedThemeKey === 'lgbt') count = 30;
+    else if (selectedThemeKey === 'casino') count = 25;
+    else if (selectedThemeKey === 'fireice') count = 25;
     else if (selectedThemeKey === 'watermelon') count = 20;
     else if (selectedThemeKey === 'matrix') count = 20;
     else if (selectedThemeKey === 'cyber') count = 15;
@@ -398,6 +452,10 @@ export default function ClientBid() {
         content = ['🌸', '💮', '💖'][Math.floor(Math.random() * 3)];
       } else if (selectedThemeKey === 'lgbt') {
         content = ['❤️', '🧡', '💛', '💚', '💙', '💜'][Math.floor(Math.random() * 6)];
+      } else if (selectedThemeKey === 'casino') {
+        content = ['♠️', '♥️', '♦️', '♣️', '🎲', '🪙'][Math.floor(Math.random() * 6)];
+      } else if (selectedThemeKey === 'fireice') {
+        content = ['❄️', '🔥', '💧', '✨'][Math.floor(Math.random() * 4)];
       } else if (selectedThemeKey === 'watermelon') {
         content = ['🍉', '💧', '🟢'][Math.floor(Math.random() * 3)];
       } else if (selectedThemeKey === 'matrix') {
