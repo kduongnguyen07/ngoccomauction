@@ -15,7 +15,7 @@ const API_URL = (rawApiUrl.startsWith('http://') || rawApiUrl.startsWith('https:
 // SĐT MOMO NHẬN TIỀN
 const MOMO_PHONE_NUMBER = import.meta.env.VITE_MOMO_PHONE; 
 
-// CONFIG CÁC TÔNG MÀU NEON CAO CẤP (Hỗ trợ cả chế độ Sáng & Tối)
+// CONFIG CÁC TÔNG MÀU NEON CAO CẤP (Đổi TOÀN BỘ tông nền, khung và chữ của trang web)
 const THEMES = {
   pink: {
     name: 'Hồng Neon',
@@ -34,7 +34,15 @@ const THEMES = {
     shadow: 'shadow-pink-500/20',
     textPrice: 'text-pink-400',
     textPriceLightMode: 'text-pink-600',
-    focusRing: 'focus:ring-pink-500'
+    focusRing: 'focus:ring-pink-500',
+    
+    // Tông nền trang và khung thẻ
+    bgPageDark: 'bg-[#0B0F19]',
+    bgPageLight: 'bg-[#FFF0F5]',
+    bgCardDark: 'bg-slate-900/40 border-white/10',
+    bgCardLight: 'bg-white/80 border-pink-100 shadow-pink-100/50',
+    textBodyDark: 'text-[#E2E8F0]',
+    textBodyLight: 'text-slate-800'
   },
   sakura: {
     name: 'Sakura Anh Đào',
@@ -47,13 +55,21 @@ const THEMES = {
     textLightMode: 'text-[#D96B7E]',
     textHover: 'hover:text-[#FFA0B4]',
     border: 'border-[#FFB7C5]/30',
-    borderLightMode: 'border-[#FFB7C5]/40',
+    borderLightMode: 'border-[#FFD0D8]',
     bgBadge: 'bg-[#3B1E22]/60',
     bgBadgeLightMode: 'bg-[#FFF0F2]',
     shadow: 'shadow-[#FFB7C5]/20',
     textPrice: 'text-[#FFA0B4]',
     textPriceLightMode: 'text-[#D96B7E]',
-    focusRing: 'focus:ring-[#FFA0B4]'
+    focusRing: 'focus:ring-[#FFA0B4]',
+    
+    // Tông nền trang và khung thẻ Sakura
+    bgPageDark: 'bg-[#1F1215]',
+    bgPageLight: 'bg-[#FFF5F6]',
+    bgCardDark: 'bg-[#2D1A1E]/80 border-[#FFB7C5]/10',
+    bgCardLight: 'bg-white/90 border-[#FFD0D8] shadow-pink-50/50',
+    textBodyDark: 'text-[#FCE4E6]',
+    textBodyLight: 'text-[#5E3036]'
   },
   watermelon: {
     name: 'Dưa Hấu Mùa Hè',
@@ -66,13 +82,21 @@ const THEMES = {
     textLightMode: 'text-[#D92A3A]',
     textHover: 'hover:text-[#FF4B5C]',
     border: 'border-[#05DF97]/30',
-    borderLightMode: 'border-[#05DF97]/40',
+    borderLightMode: 'border-[#BBF7D0]',
     bgBadge: 'bg-[#1A2E26]/60',
     bgBadgeLightMode: 'bg-[#E6F9F2]',
     shadow: 'shadow-[#FF4B5C]/20',
     textPrice: 'text-[#FF4B5C]',
     textPriceLightMode: 'text-[#D92A3A]',
-    focusRing: 'focus:ring-[#FF4B5C]'
+    focusRing: 'focus:ring-[#FF4B5C]',
+    
+    // Tông nền trang và khung thẻ Dưa Hấu
+    bgPageDark: 'bg-[#061811]',
+    bgPageLight: 'bg-[#F0FDF4]',
+    bgCardDark: 'bg-[#0E281F]/80 border-[#05DF97]/10',
+    bgCardLight: 'bg-white/90 border-[#BBF7D0] shadow-emerald-50/50',
+    textBodyDark: 'text-[#E6F7F0]',
+    textBodyLight: 'text-[#1F3D2F]'
   },
   cyber: {
     name: 'Cyan Cyberpunk',
@@ -91,7 +115,14 @@ const THEMES = {
     shadow: 'shadow-cyan-500/20',
     textPrice: 'text-cyan-400',
     textPriceLightMode: 'text-cyan-600',
-    focusRing: 'focus:ring-cyan-500'
+    focusRing: 'focus:ring-cyan-500',
+    
+    bgPageDark: 'bg-[#080E1A]',
+    bgPageLight: 'bg-[#F0F9FF]',
+    bgCardDark: 'bg-[#0E1726]/80 border-cyan-500/10',
+    bgCardLight: 'bg-white/90 border-cyan-150 shadow-cyan-50/50',
+    textBodyDark: 'text-[#E2E8F0]',
+    textBodyLight: 'text-slate-800'
   },
   matrix: {
     name: 'Lục Matrix',
@@ -110,7 +141,14 @@ const THEMES = {
     shadow: 'shadow-emerald-500/20',
     textPrice: 'text-emerald-400',
     textPriceLightMode: 'text-emerald-600',
-    focusRing: 'focus:ring-emerald-500'
+    focusRing: 'focus:ring-emerald-500',
+    
+    bgPageDark: 'bg-[#050D0A]',
+    bgPageLight: 'bg-[#F6FDF9]',
+    bgCardDark: 'bg-[#0A1A14]/80 border-emerald-500/10',
+    bgCardLight: 'bg-white/90 border-emerald-150 shadow-emerald-50/50',
+    textBodyDark: 'text-[#E6F4EA]',
+    textBodyLight: 'text-slate-800'
   },
   amber: {
     name: 'Vàng Hoàng Kim',
@@ -129,7 +167,14 @@ const THEMES = {
     shadow: 'shadow-amber-500/20',
     textPrice: 'text-amber-400',
     textPriceLightMode: 'text-amber-600',
-    focusRing: 'focus:ring-amber-500'
+    focusRing: 'focus:ring-amber-500',
+    
+    bgPageDark: 'bg-[#150F07]',
+    bgPageLight: 'bg-[#FFFBEB]',
+    bgCardDark: 'bg-[#22170B]/80 border-amber-500/10',
+    bgCardLight: 'bg-white/90 border-amber-200/60 shadow-amber-50/50',
+    textBodyDark: 'text-[#FDF6E2]',
+    textBodyLight: 'text-slate-800'
   },
   purple: {
     name: 'Tím Hoàng Hôn',
@@ -148,7 +193,14 @@ const THEMES = {
     shadow: 'shadow-fuchsia-500/20',
     textPrice: 'text-fuchsia-400',
     textPriceLightMode: 'text-fuchsia-600',
-    focusRing: 'focus:ring-fuchsia-500'
+    focusRing: 'focus:ring-fuchsia-500',
+    
+    bgPageDark: 'bg-[#110D1B]',
+    bgPageLight: 'bg-[#FAF5FF]',
+    bgCardDark: 'bg-[#1B152A]/80 border-fuchsia-500/10',
+    bgCardLight: 'bg-white/90 border-fuchsia-200/60 shadow-purple-50/50',
+    textBodyDark: 'text-[#F3E8FF]',
+    textBodyLight: 'text-slate-800'
   }
 };
 
@@ -401,21 +453,21 @@ export default function ClientBid() {
   // --- RENDER ---
   if (!commission) {
     return (
-      <div className={`flex items-center justify-center min-h-screen ${isDarkMode ? 'bg-[#0B0F19]' : 'bg-[#F3F4F6]'}`}>
+      <div className={`flex items-center justify-center min-h-screen ${isDarkMode ? theme.bgPageDark : theme.bgPageLight} transition-colors duration-500`}>
         <p className={`text-xl font-bold italic animate-pulse ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Đang tải phiên đấu giá...</p>
       </div>
     );
   }
 
   return (
-    <div className={`min-h-screen ${isDarkMode ? 'bg-[#0B0F19] text-[#E2E8F0]' : 'bg-[#F3F4F6] text-[#1E293B]'} font-sans relative overflow-hidden transition-colors duration-500`}>
+    <div className={`min-h-screen ${isDarkMode ? theme.bgPageDark : theme.bgPageLight} ${isDarkMode ? theme.textBodyDark : theme.textBodyLight} font-sans relative overflow-hidden transition-all duration-500`}>
       
       {/* Background Soft Neon Glows */}
       <div className={`absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full ${theme.glow1} blur-[120px] pointer-events-none transition-all duration-500`} />
       <div className={`absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full ${theme.glow2} blur-[120px] pointer-events-none transition-all duration-500`} />
 
       {/* HEADER */}
-      <header className={`${isDarkMode ? 'bg-[#0D1424]/80 border-white/10' : 'bg-white/80 border-slate-200/60 shadow-sm'} backdrop-blur-md sticky top-0 z-40 border-b transition-colors duration-500`}>
+      <header className={`${isDarkMode ? 'bg-black/20 border-white/10' : 'bg-white/40 border-black/5 shadow-sm'} backdrop-blur-md sticky top-0 z-40 border-b transition-colors duration-500`}>
         <nav className="max-w-[1600px] mx-auto px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between relative">
           <div className="flex items-center gap-2 sm:gap-3">
             <div className={`w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r ${theme.primary} rounded-xl sm:rounded-2xl flex items-center justify-center text-white shadow-lg ${theme.shadow} transition-all duration-500`}>
@@ -473,7 +525,7 @@ export default function ClientBid() {
                         }}
                         className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all font-bold text-xs ${
                           selectedThemeKey === key 
-                            ? isDarkMode ? 'bg-white/10 text-white border-white/10' : 'bg-slate-100 text-slate-900 border-slate-200'
+                            ? isDarkMode ? 'bg-white/10 text-white border border-white/10' : 'bg-slate-100 text-slate-900 border border-slate-200'
                             : 'text-slate-400 hover:bg-white/5 hover:text-white border border-transparent'
                         }`}
                       >
@@ -519,8 +571,8 @@ export default function ClientBid() {
         {/* CỘT TRÁI (Main Auction Card) */}
         <div className="lg:col-span-2 space-y-6 sm:space-y-8 animate-in fade-in duration-500">
           
-          <div className={`backdrop-blur-md rounded-3xl sm:rounded-[2.5rem] shadow-2xl p-4 sm:p-5 gap-6 sm:gap-8 flex flex-col md:flex-row shadow-pink-500/5 ${
-            isDarkMode ? 'bg-slate-900/40 border-white/10' : 'bg-white border-slate-200 shadow-lg shadow-slate-100'
+          <div className={`backdrop-blur-md rounded-3xl sm:rounded-[2.5rem] shadow-2xl p-4 sm:p-5 gap-6 sm:gap-8 flex flex-col md:flex-row ${
+            isDarkMode ? theme.bgCardDark : theme.bgCardLight
           } ${theme.shadow} border transition-all duration-500`}>
             {/* Hình ảnh */}
             <div className={`border rounded-2xl sm:rounded-[2rem] md:w-2/5 aspect-square flex items-center justify-center overflow-hidden shadow-inner transition-colors duration-500 ${
@@ -574,7 +626,7 @@ export default function ClientBid() {
 
               {/* GIÁ HIỆN TẠI */}
               <div className={`flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8 p-4 sm:p-6 rounded-2xl border transition-colors duration-500 ${
-                isDarkMode ? 'bg-slate-900/60 border-white/5' : 'bg-slate-50 border-slate-200'
+                isDarkMode ? 'bg-black/20 border-white/5' : 'bg-white/40 border-black/5'
               }`}>
                 <div>
                   <p className={`text-xs font-bold uppercase tracking-widest mb-1 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Giá hiện tại</p>
@@ -585,14 +637,14 @@ export default function ClientBid() {
                 </div>
                 {topBid && (
                   <div className={`flex items-center gap-3 p-3 rounded-xl border self-start sm:self-auto w-full sm:w-auto transition-colors duration-500 ${
-                    isDarkMode ? 'bg-slate-950 border-white/10' : 'bg-white border-slate-200 shadow-sm'
+                    isDarkMode ? 'bg-black/30 border-white/10' : 'bg-white border-black/5 shadow-sm'
                   }`}>
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs ${
-                      isDarkMode ? 'bg-slate-850 text-slate-300' : 'bg-slate-100 text-slate-500'
+                      isDarkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-500'
                     }`}>{topBid.full_name[0]}</div>
                     <div className="text-left">
                       <p className="text-xs text-slate-400 font-medium">Bởi</p>
-                      <p className={`font-bold text-sm ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>{topBid.full_name}</p>
+                      <p className={`font-bold text-sm ${isDarkMode ? 'text-slate-200' : 'text-slate-805'}`}>{topBid.full_name}</p>
                     </div>
                   </div>
                 )}
@@ -614,8 +666,8 @@ export default function ClientBid() {
                         onChange={(e) => setCustomBid(Number(e.target.value))}
                         className={`w-full pl-10 pr-4 py-4 sm:py-5 rounded-2xl focus:ring-2 ${theme.focusRing} focus:outline-none font-bold text-lg sm:text-xl transition-all ${
                           isDarkMode 
-                            ? 'bg-slate-950/60 border-white/10 text-white' 
-                            : 'bg-slate-50 border-slate-200 text-slate-900'
+                            ? 'bg-black/30 border-white/10 text-white' 
+                            : 'bg-white/40 border-slate-200 text-slate-900'
                         }`}
                       />
                     </div>
@@ -648,7 +700,7 @@ export default function ClientBid() {
                 </div>
               ) : (
                 <div className={`w-full text-center p-5 sm:p-6 border rounded-2xl transition-colors duration-500 ${
-                  isDarkMode ? 'bg-slate-900/60 border-white/5' : 'bg-slate-50 border-slate-200'
+                  isDarkMode ? 'bg-black/20 border-white/5' : 'bg-white/40 border-slate-200'
                 }`}>
                   <span className={`font-bold text-base sm:text-lg italic ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                     {commission.status === 'closed' ? 'Phiên đấu giá đã chốt đơn!' : 'Phiên đấu giá đã hết thời gian!'}
@@ -691,8 +743,8 @@ export default function ClientBid() {
           )}
 
           {/* RULES / TOS */}
-          <div className={`p-5 sm:p-8 rounded-3xl sm:rounded-[2.5rem] border transition-colors duration-500 ${
-            isDarkMode ? 'bg-slate-900/40 border-white/10 shadow-sm' : 'bg-white border-slate-200 shadow-sm'
+          <div className={`p-5 sm:p-8 rounded-3xl sm:rounded-[2.5rem] border transition-all duration-500 ${
+            isDarkMode ? theme.bgCardDark : theme.bgCardLight
           }`}>
             <h3 className={`text-lg sm:text-xl font-bold mb-4 sm:mb-6 pb-3 sm:pb-4 border-b flex items-center gap-2 transition-colors duration-500 ${
               isDarkMode ? 'text-white border-white/5' : 'text-slate-950 border-slate-100'
@@ -700,7 +752,7 @@ export default function ClientBid() {
               <Zap size={20} className={`${theme.text} animate-pulse transition-colors duration-500`}/> Quy định & Hướng dẫn Đấu giá
             </h3>
             <div className={`grid grid-cols-1 md:grid-cols-2 gap-x-6 sm:gap-x-10 gap-y-4 sm:gap-y-5 font-medium text-xs sm:text-sm ${
-              isDarkMode ? 'text-slate-300' : 'text-slate-600'
+              isDarkMode ? theme.textBodyDark : theme.textBodyLight
             }`}>
               {[
                 {icon: <Gavel size={16}/>, label: 'SB:', val: `${parseFloat(commission.start_price || 0).toLocaleString('vi-VN')} đ (Giá khởi điểm)`},
@@ -710,8 +762,8 @@ export default function ClientBid() {
                 {icon: <XCircle size={16}/>, label: 'Huỷ lượt:', val: commission.rule_disqualify || 'Nghiêm cấm tự ý huỷ lượt đấu giá / bùng cọc'},
                 {icon: <Info size={16}/>, label: 'Sử dụng:', val: commission.rule_usage || 'Mục đích cá nhân (Thương mại sẽ tính phí riêng)'},
               ].map(item => (
-                <div key={item.label} className={`flex items-center gap-3 p-3 sm:p-4 rounded-xl border transition-colors duration-500 ${
-                  isDarkMode ? 'bg-slate-950/60 border-white/5' : 'bg-slate-50 border-slate-200/40'
+                <div key={item.label} className={`flex items-center gap-3 p-3 sm:p-4 rounded-xl border transition-all duration-500 ${
+                  isDarkMode ? 'bg-black/30 border-white/5' : 'bg-white/40 border-black/5'
                 }`}>
                   <div className={`${theme.text} shrink-0 transition-colors duration-500`}>{item.icon}</div>
                   <span className={`font-extrabold w-20 shrink-0 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>{item.label}</span>
@@ -723,8 +775,8 @@ export default function ClientBid() {
         </div>
 
         {/* CỘT PHẢI (Bid History) */}
-        <div className={`p-5 sm:p-8 rounded-3xl sm:rounded-[2.5rem] shadow-lg h-fit lg:sticky lg:top-28 border transition-colors duration-500 ${
-          isDarkMode ? 'bg-slate-900/40 border-white/10' : 'bg-white border-slate-200'
+        <div className={`p-5 sm:p-8 rounded-3xl sm:rounded-[2.5rem] shadow-lg h-fit lg:sticky lg:top-28 border transition-all duration-500 ${
+          isDarkMode ? theme.bgCardDark : theme.bgCardLight
         }`}>
           <h3 className={`text-base sm:text-lg font-bold mb-6 sm:mb-8 flex items-center gap-2 transition-colors duration-500 ${
             isDarkMode ? 'text-white' : 'text-slate-950'
@@ -741,12 +793,12 @@ export default function ClientBid() {
                     ? isDarkMode ? `${theme.bgBadge} ${theme.border} shadow-inner` : `${theme.bgBadgeLightMode} ${theme.borderLightMode} shadow-sm`
                     : isABWinner 
                       ? `bg-gradient-to-r ${theme.primary} ${isDarkMode ? theme.border : theme.borderLightMode} shadow-lg text-white` 
-                      : isDarkMode ? 'bg-slate-950/60 border border-white/5' : 'bg-slate-50 border border-slate-200/50'
+                      : isDarkMode ? 'bg-black/30 border border-white/5' : 'bg-white/40 border border-black/5'
                 }`}>
                   <div className="flex items-center gap-3 sm:gap-4">
                     <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-xs ${isABWinner ? 'bg-white text-slate-900' : 'bg-slate-850 text-slate-400'}`}>{bid.full_name[0]}</div>
                     <div>
-                      <p className={`font-bold text-sm sm:text-base ${isABWinner ? 'text-white' : isDarkMode ? 'text-white' : 'text-slate-800'}`}>
+                      <p className={`font-bold text-sm sm:text-base ${isABWinner ? 'text-white' : isDarkMode ? 'text-white' : 'text-slate-850'}`}>
                         {bid.full_name} 
                       </p>
                       <p className={`text-[10px] sm:text-xs ${isABWinner ? 'text-slate-200' : isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
@@ -834,7 +886,7 @@ export default function ClientBid() {
 
       {/* FOOTER */}
       <footer className={`max-w-[1600px] mx-auto px-6 py-10 mt-10 border-t text-center text-xs font-medium transition-colors duration-500 ${
-        isDarkMode ? 'border-white/5 text-slate-500' : 'border-slate-200/60 text-slate-400'
+        isDarkMode ? 'border-white/10 text-slate-400' : 'border-black/5 text-slate-500'
       }`}>
         <p>&copy; {new Date().getFullYear()} NgocComAuction. All rights reserved.</p>
         <p className="mt-1">Powered by React & Node.js</p>
