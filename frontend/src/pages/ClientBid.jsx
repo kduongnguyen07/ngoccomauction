@@ -4,7 +4,7 @@ import { io } from 'socket.io-client';
 import previewImg from '../assets/preview.jpeg';
 import { 
   Gavel, Zap, Clock, Palette, CheckCircle2, 
-  XCircle, Info, LogOut, User 
+  XCircle, Info, LogOut, User, Sun, Moon 
 } from 'lucide-react';
 
 const rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -15,7 +15,7 @@ const API_URL = (rawApiUrl.startsWith('http://') || rawApiUrl.startsWith('https:
 // SĐT MOMO NHẬN TIỀN
 const MOMO_PHONE_NUMBER = import.meta.env.VITE_MOMO_PHONE; 
 
-// CONFIG CÁC TÔNG MÀU NEON CAO CẤP
+// CONFIG CÁC TÔNG MÀU NEON CAO CẤP (Hỗ trợ cả chế độ Sáng & Tối)
 const THEMES = {
   pink: {
     name: 'Hồng Neon',
@@ -25,11 +25,15 @@ const THEMES = {
     glow2: 'bg-rose-500/5',
     text: 'text-pink-500',
     textLight: 'text-pink-300',
+    textLightMode: 'text-pink-600',
     textHover: 'hover:text-pink-500',
     border: 'border-pink-500/30',
+    borderLightMode: 'border-pink-200',
     bgBadge: 'bg-pink-950/40',
+    bgBadgeLightMode: 'bg-pink-50',
     shadow: 'shadow-pink-500/20',
     textPrice: 'text-pink-400',
+    textPriceLightMode: 'text-pink-600',
     focusRing: 'focus:ring-pink-500'
   },
   cyber: {
@@ -40,11 +44,15 @@ const THEMES = {
     glow2: 'bg-blue-500/5',
     text: 'text-cyan-400',
     textLight: 'text-cyan-300',
+    textLightMode: 'text-cyan-600',
     textHover: 'hover:text-cyan-400',
     border: 'border-cyan-500/30',
+    borderLightMode: 'border-cyan-200',
     bgBadge: 'bg-cyan-950/40',
+    bgBadgeLightMode: 'bg-cyan-50',
     shadow: 'shadow-cyan-500/20',
     textPrice: 'text-cyan-400',
+    textPriceLightMode: 'text-cyan-600',
     focusRing: 'focus:ring-cyan-500'
   },
   matrix: {
@@ -55,11 +63,15 @@ const THEMES = {
     glow2: 'bg-teal-500/5',
     text: 'text-emerald-400',
     textLight: 'text-emerald-300',
+    textLightMode: 'text-emerald-600',
     textHover: 'hover:text-emerald-400',
     border: 'border-emerald-500/30',
+    borderLightMode: 'border-emerald-200',
     bgBadge: 'bg-emerald-950/40',
+    bgBadgeLightMode: 'bg-emerald-50',
     shadow: 'shadow-emerald-500/20',
     textPrice: 'text-emerald-400',
+    textPriceLightMode: 'text-emerald-600',
     focusRing: 'focus:ring-emerald-500'
   },
   amber: {
@@ -70,11 +82,15 @@ const THEMES = {
     glow2: 'bg-orange-500/5',
     text: 'text-amber-500',
     textLight: 'text-amber-300',
+    textLightMode: 'text-amber-600',
     textHover: 'hover:text-amber-500',
     border: 'border-amber-500/30',
+    borderLightMode: 'border-amber-200',
     bgBadge: 'bg-amber-950/40',
+    bgBadgeLightMode: 'bg-amber-50',
     shadow: 'shadow-amber-500/20',
     textPrice: 'text-amber-400',
+    textPriceLightMode: 'text-amber-600',
     focusRing: 'focus:ring-amber-500'
   },
   purple: {
@@ -85,11 +101,15 @@ const THEMES = {
     glow2: 'bg-violet-500/5',
     text: 'text-fuchsia-500',
     textLight: 'text-fuchsia-300',
+    textLightMode: 'text-fuchsia-600',
     textHover: 'hover:text-fuchsia-500',
     border: 'border-fuchsia-500/30',
+    borderLightMode: 'border-fuchsia-200',
     bgBadge: 'bg-fuchsia-950/40',
+    bgBadgeLightMode: 'bg-fuchsia-50',
     shadow: 'shadow-fuchsia-500/20',
     textPrice: 'text-fuchsia-400',
+    textPriceLightMode: 'text-fuchsia-600',
     focusRing: 'focus:ring-fuchsia-500'
   }
 };
@@ -118,18 +138,29 @@ export default function ClientBid() {
   const [customBid, setCustomBid] = useState('');
   const [formData, setFormData] = useState({ fullName: '', contactInfo: '' });
 
-  // Theme state
+  // Theme & Mode states
   const [selectedThemeKey, setSelectedThemeKey] = useState('pink');
   const [showThemePanel, setShowThemePanel] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('clientThemeKey');
     if (savedTheme && THEMES[savedTheme]) {
       setSelectedThemeKey(savedTheme);
     }
+    const savedMode = localStorage.getItem('clientThemeMode');
+    if (savedMode === 'light') {
+      setIsDarkMode(false);
+    }
   }, []);
 
   const theme = THEMES[selectedThemeKey] || THEMES.pink;
+
+  const toggleDarkMode = () => {
+    const newMode = !isDarkMode;
+    setIsDarkMode(newMode);
+    localStorage.setItem('clientThemeMode', newMode ? 'dark' : 'light');
+  };
 
   // 1. Hàm gọi API bọc trong useCallback để dùng lại mượt mà
   const fetchActiveCom = useCallback(async () => {
@@ -332,37 +363,54 @@ export default function ClientBid() {
   // --- RENDER ---
   if (!commission) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#0B0F19]">
-        <p className="text-xl text-slate-400 font-bold italic animate-pulse">Đang tải phiên đấu giá...</p>
+      <div className={`flex items-center justify-center min-h-screen ${isDarkMode ? 'bg-[#0B0F19]' : 'bg-[#F3F4F6]'}`}>
+        <p className={`text-xl font-bold italic animate-pulse ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Đang tải phiên đấu giá...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0B0F19] text-[#E2E8F0] font-sans relative overflow-hidden">
+    <div className={`min-h-screen ${isDarkMode ? 'bg-[#0B0F19] text-[#E2E8F0]' : 'bg-[#F3F4F6] text-[#1E293B]'} font-sans relative overflow-hidden transition-colors duration-500`}>
       
       {/* Background Soft Neon Glows */}
       <div className={`absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full ${theme.glow1} blur-[120px] pointer-events-none transition-all duration-500`} />
       <div className={`absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full ${theme.glow2} blur-[120px] pointer-events-none transition-all duration-500`} />
 
       {/* HEADER */}
-      <header className="bg-[#0D1424]/80 backdrop-blur-md sticky top-0 z-40 border-b border-white/10 shadow-lg">
+      <header className={`${isDarkMode ? 'bg-[#0D1424]/80 border-white/10' : 'bg-white/80 border-slate-200/60 shadow-sm'} backdrop-blur-md sticky top-0 z-40 border-b transition-colors duration-500`}>
         <nav className="max-w-[1600px] mx-auto px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between relative">
           <div className="flex items-center gap-2 sm:gap-3">
             <div className={`w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r ${theme.primary} rounded-xl sm:rounded-2xl flex items-center justify-center text-white shadow-lg ${theme.shadow} transition-all duration-500`}>
               <Gavel size={18} className="sm:w-[22px] sm:h-[22px]"/>
             </div>
-            <span className="text-lg sm:text-2xl font-black tracking-tighter uppercase text-white transition-colors duration-500">
+            <span className={`text-lg sm:text-2xl font-black tracking-tighter uppercase ${isDarkMode ? 'text-white' : 'text-slate-800'} transition-colors duration-500`}>
               Ngọc<span className={`${theme.text} transition-colors duration-500`}>Com</span>Auction
             </span>
           </div>
           
-          <div className="flex items-center gap-2 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Nút Light/Dark Mode */}
+            <button 
+              onClick={toggleDarkMode} 
+              className={`p-2 border rounded-full transition-all active:scale-95 flex items-center justify-center ${
+                isDarkMode 
+                  ? 'bg-slate-800/80 hover:bg-slate-700 border-white/10 text-slate-300 hover:text-white' 
+                  : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-600 hover:text-slate-900'
+              }`}
+              title={isDarkMode ? "Chuyển sang giao diện sáng" : "Chuyển sang giao diện tối"}
+            >
+              {isDarkMode ? <Sun size={18}/> : <Moon size={18}/>}
+            </button>
+
             {/* Tùy chỉnh màu sắc Button */}
             <div className="relative">
               <button 
                 onClick={() => setShowThemePanel(!showThemePanel)} 
-                className="p-2 bg-slate-800/80 hover:bg-slate-700 border border-white/10 rounded-full text-slate-300 hover:text-white transition-all active:scale-95 flex items-center justify-center"
+                className={`p-2 border rounded-full transition-all active:scale-95 flex items-center justify-center ${
+                  isDarkMode 
+                    ? 'bg-slate-800/80 hover:bg-slate-700 border-white/10 text-slate-300 hover:text-white' 
+                    : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-600 hover:text-slate-900'
+                }`}
                 title="Thay đổi màu sắc giao diện"
               >
                 <Palette size={18}/>
@@ -370,8 +418,12 @@ export default function ClientBid() {
 
               {/* Bảng tùy chỉnh màu sắc */}
               {showThemePanel && (
-                <div className="absolute right-0 top-12 z-50 bg-[#0F1626]/95 backdrop-blur-md border border-white/10 p-4 rounded-2xl shadow-2xl w-56 animate-in fade-in slide-in-from-top-2 duration-150">
-                  <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider mb-3">Màu sắc giao diện</h4>
+                <div className={`absolute right-0 top-12 z-50 backdrop-blur-md border p-4 rounded-2xl shadow-2xl w-56 animate-in fade-in slide-in-from-top-2 duration-150 ${
+                  isDarkMode 
+                    ? 'bg-[#0F1626]/95 border-white/10 text-white' 
+                    : 'bg-white/95 border-slate-200/80 text-slate-800'
+                }`}>
+                  <h4 className={`text-xs font-black uppercase tracking-wider mb-3 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Màu sắc giao diện</h4>
                   <div className="space-y-2">
                     {Object.entries(THEMES).map(([key, t]) => (
                       <button
@@ -379,16 +431,17 @@ export default function ClientBid() {
                         onClick={() => {
                           setSelectedThemeKey(key);
                           localStorage.setItem('clientThemeKey', key);
+                          setShowThemePanel(false);
                         }}
                         className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all font-bold text-xs ${
                           selectedThemeKey === key 
-                            ? 'bg-white/10 text-white border border-white/10' 
+                            ? isDarkMode ? 'bg-white/10 text-white border-white/10' : 'bg-slate-100 text-slate-900 border-slate-200'
                             : 'text-slate-400 hover:bg-white/5 hover:text-white border border-transparent'
                         }`}
                       >
                         <div className="flex items-center gap-2">
                           <span className={`w-3.5 h-3.5 rounded-full bg-gradient-to-r ${t.primary}`} />
-                          <span>{t.name}</span>
+                          <span className={isDarkMode ? 'text-slate-300' : 'text-slate-700'}>{t.name}</span>
                         </div>
                         {selectedThemeKey === key && <span className={`${t.text} font-black text-sm`}>●</span>}
                       </button>
@@ -399,11 +452,15 @@ export default function ClientBid() {
             </div>
 
             {bidderName ? (
-              <div className="flex items-center gap-1.5 sm:gap-3 bg-slate-800/80 px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-full border border-white/10">
-                <div className={`w-6 h-6 sm:w-9 sm:h-9 rounded-full ${theme.bgBadge} ${theme.textLight} transition-all duration-500 flex items-center justify-center font-bold text-[10px] sm:text-xs`}>
+              <div className={`flex items-center gap-1.5 sm:gap-3 px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-full border transition-colors duration-500 ${
+                isDarkMode ? 'bg-slate-800/80 border-white/10' : 'bg-white border-slate-200 shadow-sm'
+              }`}>
+                <div className={`w-6 h-6 sm:w-9 sm:h-9 rounded-full transition-all duration-500 flex items-center justify-center font-bold text-[10px] sm:text-xs ${
+                  isDarkMode ? `${theme.bgBadge} ${theme.textLight}` : `${theme.bgBadgeLightMode} ${theme.textLightMode}`
+                }`}>
                   {bidderName[0]}
                 </div>
-                <span className="font-bold text-xs sm:text-sm text-slate-100 max-w-[80px] sm:max-w-none truncate">{bidderName}</span>
+                <span className={`font-bold text-xs sm:text-sm max-w-[80px] sm:max-w-none truncate ${isDarkMode ? 'text-slate-100' : 'text-slate-700'}`}>{bidderName}</span>
                 <button onClick={() => { localStorage.clear(); window.location.reload(); }} className={`text-slate-400 ${theme.textHover} p-0.5 transition-colors`}><LogOut size={14} className="sm:w-4 sm:h-4"/></button>
               </div>
             ) : (
@@ -424,9 +481,13 @@ export default function ClientBid() {
         {/* CỘT TRÁI (Main Auction Card) */}
         <div className="lg:col-span-2 space-y-6 sm:space-y-8 animate-in fade-in duration-500">
           
-          <div className={`bg-slate-900/40 backdrop-blur-md border border-white/10 rounded-3xl sm:rounded-[2.5rem] shadow-2xl p-4 sm:p-5 gap-6 sm:gap-8 flex flex-col md:flex-row shadow-pink-500/5 ${theme.shadow} transition-all duration-500`}>
+          <div className={`backdrop-blur-md rounded-3xl sm:rounded-[2.5rem] shadow-2xl p-4 sm:p-5 gap-6 sm:gap-8 flex flex-col md:flex-row shadow-pink-500/5 ${
+            isDarkMode ? 'bg-slate-900/40 border-white/10' : 'bg-white border-slate-200 shadow-lg shadow-slate-100'
+          } ${theme.shadow} border transition-all duration-500`}>
             {/* Hình ảnh */}
-            <div className="bg-slate-950/60 border border-white/10 rounded-2xl sm:rounded-[2rem] md:w-2/5 aspect-square flex items-center justify-center overflow-hidden shadow-inner">
+            <div className={`border rounded-2xl sm:rounded-[2rem] md:w-2/5 aspect-square flex items-center justify-center overflow-hidden shadow-inner transition-colors duration-500 ${
+              isDarkMode ? 'bg-slate-950/60 border-white/10' : 'bg-slate-50 border-slate-200/60'
+            }`}>
               <img 
                 src={commission.image_url || previewImg} 
                 alt={commission.title} 
@@ -440,11 +501,15 @@ export default function ClientBid() {
                 <span className={`inline-block px-3.5 py-1 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wider mb-2.5 sm:mb-3 transition-all duration-500 ${
                   isUpcoming ? 'bg-purple-950/40 text-purple-300 border border-purple-500/30 animate-pulse' : 
                   isClosed ? 'bg-slate-800 text-slate-400 border border-white/5' : 
-                  `${theme.bgBadge} ${theme.textLight} border ${theme.border}`
+                  isDarkMode 
+                    ? `${theme.bgBadge} ${theme.textLight} border ${theme.border}`
+                    : `${theme.bgBadgeLightMode} ${theme.textLightMode} border ${theme.borderLightMode}`
                 }`}>
                   {commission.phase} - {isUpcoming ? 'Sắp diễn ra' : isClosed ? 'Đã đóng' : 'Đang mở'}
                 </span>
-                <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-white mb-2 sm:mb-4">{commission.title}</h1>
+                <h1 className={`text-2xl sm:text-4xl font-extrabold tracking-tight mb-2 sm:mb-4 transition-colors duration-500 ${
+                  isDarkMode ? 'text-white' : 'text-slate-900'
+                }`}>{commission.title}</h1>
               </div>
 
               {/* ĐỒNG HỒ */}
@@ -470,20 +535,26 @@ export default function ClientBid() {
               </div>
 
               {/* GIÁ HIỆN TẠI */}
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8 p-4 sm:p-6 bg-slate-900/60 rounded-2xl border border-white/5">
+              <div className={`flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8 p-4 sm:p-6 rounded-2xl border transition-colors duration-500 ${
+                isDarkMode ? 'bg-slate-900/60 border-white/5' : 'bg-slate-50 border-slate-200'
+              }`}>
                 <div>
-                  <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1">Giá hiện tại</p>
-                  <h2 className="text-4xl sm:text-6xl font-black text-white tracking-tighter flex items-baseline">
+                  <p className={`text-xs font-bold uppercase tracking-widest mb-1 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Giá hiện tại</p>
+                  <h2 className={`text-4xl sm:text-6xl font-black tracking-tighter flex items-baseline ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
                     {parseFloat(currentPrice).toLocaleString('vi-VN')}
-                    <span className="text-xl sm:text-2xl text-slate-400 ml-1 font-bold">đ</span>
+                    <span className={`text-xl sm:text-2xl ml-1 font-bold ${isDarkMode ? 'text-slate-400' : 'text-slate-400'}`}>đ</span>
                   </h2>
                 </div>
                 {topBid && (
-                  <div className="flex items-center gap-3 bg-slate-950 border border-white/10 p-3 rounded-xl shadow-md self-start sm:self-auto w-full sm:w-auto">
-                    <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 font-bold text-xs">{topBid.full_name[0]}</div>
+                  <div className={`flex items-center gap-3 p-3 rounded-xl border self-start sm:self-auto w-full sm:w-auto transition-colors duration-500 ${
+                    isDarkMode ? 'bg-slate-950 border-white/10' : 'bg-white border-slate-200 shadow-sm'
+                  }`}>
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs ${
+                      isDarkMode ? 'bg-slate-850 text-slate-300' : 'bg-slate-100 text-slate-500'
+                    }`}>{topBid.full_name[0]}</div>
                     <div className="text-left">
                       <p className="text-xs text-slate-400 font-medium">Bởi</p>
-                      <p className="font-bold text-sm text-slate-200">{topBid.full_name}</p>
+                      <p className={`font-bold text-sm ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>{topBid.full_name}</p>
                     </div>
                   </div>
                 )}
@@ -503,7 +574,11 @@ export default function ClientBid() {
                         type="number" 
                         value={customBid}
                         onChange={(e) => setCustomBid(Number(e.target.value))}
-                        className={`w-full pl-10 pr-4 py-4 sm:py-5 bg-slate-950/60 border border-white/10 text-white rounded-2xl focus:ring-2 ${theme.focusRing} focus:outline-none font-bold text-lg sm:text-xl transition-all`}
+                        className={`w-full pl-10 pr-4 py-4 sm:py-5 rounded-2xl focus:ring-2 ${theme.focusRing} focus:outline-none font-bold text-lg sm:text-xl transition-all ${
+                          isDarkMode 
+                            ? 'bg-slate-950/60 border-white/10 text-white' 
+                            : 'bg-slate-50 border-slate-200 text-slate-900'
+                        }`}
                       />
                     </div>
                     <button 
@@ -516,22 +591,28 @@ export default function ClientBid() {
                   </div>
 
                   <div className="relative flex py-1 sm:py-2 items-center">
-                    <div className="flex-grow border-t border-white/10"></div>
-                    <span className="flex-shrink-0 mx-4 text-slate-500 text-xs sm:text-sm font-bold uppercase tracking-widest">Hoặc</span>
-                    <div className="flex-grow border-t border-white/10"></div>
+                    <div className={`flex-grow border-t ${isDarkMode ? 'border-white/10' : 'border-slate-200'} transition-colors duration-500`}></div>
+                    <span className={`flex-shrink-0 mx-4 text-xs sm:text-sm font-bold uppercase tracking-widest ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>Hoặc</span>
+                    <div className={`flex-grow border-t ${isDarkMode ? 'border-white/10' : 'border-slate-200'} transition-colors duration-500`}></div>
                   </div>
 
                   <button 
                     onClick={() => executeBid(parseFloat(commission.auto_buy_price) || 1000000, true)} 
                     disabled={isBidding || parseFloat(currentPrice) >= (parseFloat(commission.auto_buy_price) || 1000000)}
-                    className="w-full py-4 sm:py-5 bg-slate-800 hover:bg-slate-700 text-white border border-white/10 rounded-2xl font-black text-lg sm:text-xl transition-all active:scale-95 disabled:opacity-50 shadow-md shadow-black/30" 
+                    className={`w-full py-4 sm:py-5 border rounded-2xl font-black text-lg sm:text-xl transition-all active:scale-95 disabled:opacity-50 shadow-md ${
+                      isDarkMode 
+                        ? 'bg-slate-800 hover:bg-slate-700 text-white border-white/10 shadow-black/30' 
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200/80 shadow-slate-200/50'
+                    }`}
                   >
                     MUA NGAY (AB) {parseFloat(commission.auto_buy_price || 1000000).toLocaleString('vi-VN')} đ
                   </button>
                 </div>
               ) : (
-                <div className="w-full text-center p-5 sm:p-6 bg-slate-900/60 rounded-2xl border border-white/5">
-                  <span className="text-slate-400 font-bold text-base sm:text-lg italic">
+                <div className={`w-full text-center p-5 sm:p-6 border rounded-2xl transition-colors duration-500 ${
+                  isDarkMode ? 'bg-slate-900/60 border-white/5' : 'bg-slate-50 border-slate-200'
+                }`}>
+                  <span className={`font-bold text-base sm:text-lg italic ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                     {commission.status === 'closed' ? 'Phiên đấu giá đã chốt đơn!' : 'Phiên đấu giá đã hết thời gian!'}
                   </span>
                 </div>
@@ -541,14 +622,20 @@ export default function ClientBid() {
 
           {/* GIAO DIỆN DÀNH RIÊNG CHO NGƯỜI TRÚNG THẦU */}
           {isWinner && topBid && (
-            <div className="bg-emerald-950/40 backdrop-blur-md border-2 border-emerald-500/30 p-6 sm:p-10 rounded-3xl sm:rounded-[2.5rem] mt-6 text-center shadow-xl shadow-emerald-500/5">
-              <h3 className="text-2xl sm:text-5xl font-black text-emerald-400 tracking-tighter mb-4">🎉 CHÚC MỪNG BẠN ĐÃ CHIẾN THẮNG!</h3>
-              <p className="text-emerald-300 font-semibold text-sm sm:text-lg mb-6 sm:mb-8 max-w-xl mx-auto">
-                Chúc mừng bạn đã trúng đấu giá! Vui lòng quét mã QR chuyển khoản bên dưới để đặt cọc trước 50% số tiền là <span className="font-extrabold text-white text-lg sm:text-2xl">{(parseFloat(topBid.bid_amount) / 2).toLocaleString('vi-VN')} đ</span> (tổng giá trị trúng bid là {parseFloat(topBid.bid_amount).toLocaleString('vi-VN')} đ) trong vòng 24 giờ nhé.
+            <div className={`p-6 sm:p-10 rounded-3xl sm:rounded-[2.5rem] mt-6 text-center shadow-xl border-2 transition-all duration-500 ${
+              isDarkMode 
+                ? 'bg-emerald-950/40 border-emerald-500/30 text-emerald-300 shadow-emerald-500/5' 
+                : 'bg-emerald-50 border-emerald-400 text-emerald-800 shadow-emerald-100/50'
+            }`}>
+              <h3 className={`text-2xl sm:text-5xl font-black tracking-tighter mb-4 ${isDarkMode ? 'text-emerald-400' : 'text-emerald-700'}`}>🎉 CHÚC MỪNG BẠN ĐÃ CHIẾN THẮNG!</h3>
+              <p className={`font-semibold text-sm sm:text-lg mb-6 sm:mb-8 max-w-xl mx-auto ${isDarkMode ? 'text-emerald-300' : 'text-slate-700'}`}>
+                Chúc mừng bạn đã trúng đấu giá! Vui lòng quét mã QR chuyển khoản bên dưới để đặt cọc trước 50% số tiền là <span className={`font-extrabold text-lg sm:text-2xl ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{(parseFloat(topBid.bid_amount) / 2).toLocaleString('vi-VN')} đ</span> (tổng giá trị trúng bid là {parseFloat(topBid.bid_amount).toLocaleString('vi-VN')} đ) trong vòng 24 giờ nhé.
               </p>
               
               {MOMO_PHONE_NUMBER ? (
-                <div className="bg-white p-4 sm:p-6 rounded-[2rem] inline-block shadow-lg border border-emerald-500/30 max-w-full">
+                <div className={`p-4 sm:p-6 rounded-[2rem] inline-block shadow-lg border max-w-full transition-colors duration-500 ${
+                  isDarkMode ? 'bg-white border-emerald-500/30 shadow-black/40' : 'bg-white border-emerald-100 shadow-slate-100'
+                }`}>
                   <img
                     src={`https://img.vietqr.io/image/MBBANK-${MOMO_PHONE_NUMBER}-compact2.png?amount=${topBid.bid_amount / 2}&addInfo=Coc 50% Com ${commission.title.replace(/ /g, '%20')}`}
                     alt="VietQR"
@@ -556,7 +643,9 @@ export default function ClientBid() {
                   />
                 </div>
               ) : (
-                <div className="bg-yellow-950/40 border-2 border-yellow-500/30 p-4 sm:p-6 rounded-2xl text-yellow-300 font-bold text-sm sm:text-base">
+                <div className={`border-2 p-4 sm:p-6 rounded-2xl transition-colors duration-500 ${
+                  isDarkMode ? 'bg-yellow-950/40 border-yellow-500/30 text-yellow-300' : 'bg-yellow-50 border-yellow-400 text-yellow-800'
+                }`}>
                   ⚠️ Không tìm thấy số tài khoản. Vui lòng liên hệ admin để thanh toán!
                 </div>
               )}
@@ -564,11 +653,17 @@ export default function ClientBid() {
           )}
 
           {/* RULES / TOS */}
-          <div className="bg-slate-900/40 backdrop-blur-md border border-white/10 p-5 sm:p-8 rounded-3xl sm:rounded-[2.5rem] shadow-sm">
-            <h3 className="text-lg sm:text-xl font-bold text-white mb-4 sm:mb-6 pb-3 sm:pb-4 border-b border-white/5 flex items-center gap-2">
+          <div className={`p-5 sm:p-8 rounded-3xl sm:rounded-[2.5rem] border transition-colors duration-500 ${
+            isDarkMode ? 'bg-slate-900/40 border-white/10 shadow-sm' : 'bg-white border-slate-200 shadow-sm'
+          }`}>
+            <h3 className={`text-lg sm:text-xl font-bold mb-4 sm:mb-6 pb-3 sm:pb-4 border-b flex items-center gap-2 transition-colors duration-500 ${
+              isDarkMode ? 'text-white border-white/5' : 'text-slate-950 border-slate-100'
+            }`}>
               <Zap size={20} className={`${theme.text} animate-pulse transition-colors duration-500`}/> Quy định & Hướng dẫn Đấu giá
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 sm:gap-x-10 gap-y-4 sm:gap-y-5 text-slate-300 font-medium text-xs sm:text-sm">
+            <div className={`grid grid-cols-1 md:grid-cols-2 gap-x-6 sm:gap-x-10 gap-y-4 sm:gap-y-5 font-medium text-xs sm:text-sm ${
+              isDarkMode ? 'text-slate-300' : 'text-slate-600'
+            }`}>
               {[
                 {icon: <Gavel size={16}/>, label: 'SB:', val: `${parseFloat(commission.start_price || 0).toLocaleString('vi-VN')} đ (Giá khởi điểm)`},
                 {icon: <Zap size={16}/>, label: 'MI:', val: `${parseFloat(commission.min_increase || 20000).toLocaleString('vi-VN')} đ (Tối thiểu)${commission.max_increase ? ` - ${parseFloat(commission.max_increase).toLocaleString('vi-VN')} đ (Tối đa)` : ''}`},
@@ -577,10 +672,12 @@ export default function ClientBid() {
                 {icon: <XCircle size={16}/>, label: 'Huỷ lượt:', val: commission.rule_disqualify || 'Nghiêm cấm tự ý huỷ lượt đấu giá / bùng cọc'},
                 {icon: <Info size={16}/>, label: 'Sử dụng:', val: commission.rule_usage || 'Mục đích cá nhân (Thương mại sẽ tính phí riêng)'},
               ].map(item => (
-                <div key={item.label} className="flex items-center gap-3 p-3 sm:p-4 bg-slate-950/60 rounded-xl border border-white/5">
+                <div key={item.label} className={`flex items-center gap-3 p-3 sm:p-4 rounded-xl border transition-colors duration-500 ${
+                  isDarkMode ? 'bg-slate-950/60 border-white/5' : 'bg-slate-50 border-slate-200/40'
+                }`}>
                   <div className={`${theme.text} shrink-0 transition-colors duration-500`}>{item.icon}</div>
-                  <span className="font-extrabold text-white w-20 shrink-0">{item.label}</span>
-                  <span className="text-slate-300">{item.val}</span>
+                  <span className={`font-extrabold w-20 shrink-0 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>{item.label}</span>
+                  <span className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{item.val}</span>
                 </div>
               ))}
             </div>
@@ -588,8 +685,12 @@ export default function ClientBid() {
         </div>
 
         {/* CỘT PHẢI (Bid History) */}
-        <div className="bg-slate-900/40 backdrop-blur-md border border-white/10 p-5 sm:p-8 rounded-3xl sm:rounded-[2.5rem] shadow-lg h-fit lg:sticky lg:top-28">
-          <h3 className="text-base sm:text-lg font-bold text-white mb-6 sm:mb-8 flex items-center gap-2">
+        <div className={`p-5 sm:p-8 rounded-3xl sm:rounded-[2.5rem] shadow-lg h-fit lg:sticky lg:top-28 border transition-colors duration-500 ${
+          isDarkMode ? 'bg-slate-900/40 border-white/10' : 'bg-white border-slate-200'
+        }`}>
+          <h3 className={`text-base sm:text-lg font-bold mb-6 sm:mb-8 flex items-center gap-2 transition-colors duration-500 ${
+            isDarkMode ? 'text-white' : 'text-slate-950'
+          }`}>
             <Zap size={20} className={`${theme.text} animate-pulse transition-colors duration-500`}/>
             Lịch sử đấu giá trực tiếp
           </h3>
@@ -597,24 +698,32 @@ export default function ClientBid() {
             {bidHistory.map((bid, index) => {
               const isABWinner = (bid.isAutoBuy || (index === 0 && commission?.status === 'closed'));
               return (
-                <div key={index} className={`flex items-center justify-between p-4 sm:p-5 rounded-xl sm:rounded-2xl transition-all ${
-                  index === 0 && !isClosed ? `${theme.bgBadge} border ${theme.border} shadow-inner` : 
-                  isABWinner ? `bg-gradient-to-r ${theme.primary} border ${theme.border} shadow-lg text-white` : 
-                  'bg-slate-950/60 border border-white/5'
+                <div key={index} className={`flex items-center justify-between p-4 sm:p-5 rounded-xl sm:rounded-2xl transition-all border ${
+                  index === 0 && !isClosed 
+                    ? isDarkMode ? `${theme.bgBadge} ${theme.border} shadow-inner` : `${theme.bgBadgeLightMode} ${theme.borderLightMode} shadow-sm`
+                    : isABWinner 
+                      ? `bg-gradient-to-r ${theme.primary} ${isDarkMode ? theme.border : theme.borderLightMode} shadow-lg text-white` 
+                      : isDarkMode ? 'bg-slate-950/60 border border-white/5' : 'bg-slate-50 border border-slate-200/50'
                 }`}>
                   <div className="flex items-center gap-3 sm:gap-4">
-                    <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-xs ${isABWinner ? 'bg-white text-slate-900' : 'bg-slate-800 text-slate-400'}`}>{bid.full_name[0]}</div>
+                    <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-xs ${isABWinner ? 'bg-white text-slate-900' : 'bg-slate-850 text-slate-400'}`}>{bid.full_name[0]}</div>
                     <div>
-                      <p className={`font-bold text-sm sm:text-base ${isABWinner ? 'text-white' : 'text-white'}`}>
+                      <p className={`font-bold text-sm sm:text-base ${isABWinner ? 'text-white' : isDarkMode ? 'text-white' : 'text-slate-800'}`}>
                         {bid.full_name} 
                       </p>
-                      <p className={`text-[10px] sm:text-xs ${isABWinner ? 'text-slate-200' : 'text-slate-400'}`}>
+                      <p className={`text-[10px] sm:text-xs ${isABWinner ? 'text-slate-200' : isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                         {new Date(bid.created_at).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'})} - {new Date(bid.created_at).toLocaleDateString('vi-VN', {day:'2-digit', month:'2-digit'})}
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className={`text-lg sm:text-2xl font-black tracking-tighter ${isABWinner ? 'text-white' : index === 0 && !isClosed ? theme.textPrice : 'text-slate-200'} transition-colors duration-500`}>
+                    <div className={`text-lg sm:text-2xl font-black tracking-tighter transition-colors duration-500 ${
+                      isABWinner 
+                        ? 'text-white' 
+                        : index === 0 && !isClosed 
+                          ? isDarkMode ? theme.textPrice : theme.textPriceLightMode 
+                          : isDarkMode ? 'text-slate-200' : 'text-slate-800'
+                    }`}>
                       {parseFloat(bid.bid_amount).toLocaleString('vi-VN')} đ
                     </div>
                     {isABWinner && <span className={`inline-block text-[9px] font-black uppercase tracking-widest ${selectedThemeKey === 'pink' ? 'bg-white text-pink-600' : 'bg-white text-slate-900'} px-2 py-0.5 rounded-full -mt-1`}>Winner</span>}
@@ -623,7 +732,7 @@ export default function ClientBid() {
               );
             })}
             {bidHistory.length === 0 && (
-              <p className="text-sm text-slate-400 text-center py-10 italic">Hãy là người đầu tiên đặt bid!</p>
+              <p className={`text-sm text-center py-10 italic ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Hãy là người đầu tiên đặt bid!</p>
             )}
           </div>
         </div>
@@ -632,14 +741,16 @@ export default function ClientBid() {
 
       {/* FORM ĐĂNG KÝ */}
       {showForm && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex justify-center items-center p-4 z-50 transition-all animate-in fade-in duration-200">
-          <div className="bg-[#0D1424] border border-white/10 p-6 sm:p-10 rounded-3xl sm:rounded-[2.5rem] shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto transform transition-all animate-in zoom-in-95 duration-200">
+        <div className={`fixed inset-0 ${isDarkMode ? 'bg-slate-950/80' : 'bg-slate-900/60'} backdrop-blur-sm flex justify-center items-center p-4 z-50 transition-all animate-in fade-in duration-200`}>
+          <div className={`border p-6 sm:p-10 rounded-3xl sm:rounded-[2.5rem] shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto transform transition-all animate-in zoom-in-95 duration-200 ${
+            isDarkMode ? 'bg-[#0D1424] border-white/10 text-white' : 'bg-white border-slate-200 text-slate-800'
+          }`}>
             <div className="text-center mb-6 sm:mb-10">
               <div className={`w-12 h-12 sm:w-16 sm:h-16 ${theme.bgBadge} ${theme.text} border ${theme.border} rounded-2xl sm:rounded-3xl flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-lg ${theme.shadow} transition-all duration-500`}>
                 <User size={28} className="sm:w-8 sm:h-8"/>
               </div>
-              <h3 className="text-2xl sm:text-3xl font-black tracking-tighter text-white">Chào mừng bạn!</h3>
-              <p className="text-slate-400 mt-2 text-xs sm:text-sm max-w-xs mx-auto">Vui lòng điền thông tin để chúng tôi liên hệ khi bạn thắng phiên đấu giá nhé.</p>
+              <h3 className={`text-2xl sm:text-3xl font-black tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Chào mừng bạn!</h3>
+              <p className={`mt-2 text-xs sm:text-sm max-w-xs mx-auto ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Vui lòng điền thông tin để chúng tôi liên hệ khi bạn thắng phiên đấu giá nhé.</p>
             </div>
             <form onSubmit={handleRegister} className="space-y-4 sm:space-y-5">
               <input 
@@ -648,7 +759,11 @@ export default function ClientBid() {
                 value={formData.fullName} 
                 onChange={(e) => setFormData({ ...formData, fullName: e.target.value })} 
                 required 
-                className={`w-full px-4 sm:px-5 py-3 sm:py-4 bg-slate-950/60 border border-white/10 rounded-2xl focus:ring-2 ${theme.focusRing} focus:outline-none font-bold text-base sm:text-lg text-white placeholder-slate-500`}
+                className={`w-full px-4 sm:px-5 py-3 sm:py-4 border rounded-2xl focus:ring-2 ${theme.focusRing} focus:outline-none font-bold text-base sm:text-lg transition-colors ${
+                  isDarkMode 
+                    ? 'bg-slate-950/60 border-white/10 text-white placeholder-slate-500' 
+                    : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400'
+                }`}
               />
               <input 
                 type="text" 
@@ -656,13 +771,21 @@ export default function ClientBid() {
                 value={formData.contactInfo} 
                 onChange={(e) => setFormData({ ...formData, contactInfo: e.target.value })} 
                 required 
-                className={`w-full px-4 sm:px-5 py-3 sm:py-4 bg-slate-950/60 border border-white/10 rounded-2xl focus:ring-2 ${theme.focusRing} focus:outline-none font-bold text-base sm:text-lg text-white placeholder-slate-500`}
+                className={`w-full px-4 sm:px-5 py-3 sm:py-4 border rounded-2xl focus:ring-2 ${theme.focusRing} focus:outline-none font-bold text-base sm:text-lg transition-colors ${
+                  isDarkMode 
+                    ? 'bg-slate-950/60 border-white/10 text-white placeholder-slate-500' 
+                    : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400'
+                }`}
               />
               <div className="flex gap-3 sm:gap-4 pt-3 sm:pt-4">
                 <button type="submit" className={`flex-1 bg-gradient-to-r ${theme.primary} hover:${theme.primaryHover} text-white py-3 sm:py-4 rounded-2xl font-black text-base sm:text-lg transition-all shadow-lg ${theme.shadow} active:scale-95`}>
                   Xác nhận
                 </button>
-                <button type="button" onClick={() => setShowForm(false)} className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-3 sm:py-4 rounded-2xl border border-white/10 font-black text-base sm:text-lg transition-colors active:scale-95">
+                <button type="button" onClick={() => setShowForm(false)} className={`flex-1 border py-3 sm:py-4 rounded-2xl font-black text-base sm:text-lg transition-colors active:scale-95 ${
+                  isDarkMode 
+                    ? 'bg-slate-800 hover:bg-slate-700 border-white/10 text-slate-300' 
+                    : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-600'
+                }`}>
                   Hủy
                 </button>
               </div>
@@ -672,7 +795,9 @@ export default function ClientBid() {
       )}
 
       {/* FOOTER */}
-      <footer className="max-w-[1600px] mx-auto px-6 py-10 mt-10 border-t border-white/5 text-center text-xs text-slate-500 font-medium">
+      <footer className={`max-w-[1600px] mx-auto px-6 py-10 mt-10 border-t text-center text-xs font-medium transition-colors duration-500 ${
+        isDarkMode ? 'border-white/5 text-slate-500' : 'border-slate-200/60 text-slate-400'
+      }`}>
         <p>&copy; {new Date().getFullYear()} NgocComAuction. All rights reserved.</p>
         <p className="mt-1">Powered by React & Node.js</p>
       </footer>
