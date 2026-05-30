@@ -237,6 +237,14 @@ export default function ClientBid() {
   const [isLast30Seconds, setIsLast30Seconds] = useState(false);
   const [payTimeLeft, setPayTimeLeft] = useState('');
 
+  // --- LOGIC CHECK TRẠNG THÁI ---
+  const accurateNowForCheck = new Date(new Date().getTime() - serverTimeOffset);
+  const isTimeOut = commission && (new Date(commission.end_time) - accurateNowForCheck <= 0);
+  const isClosed = isTimeOut || commission?.status === 'closed';
+  const isUpcoming = commission && commission.status === 'upcoming';
+  const topBid = bidHistory[0];
+  const isWinner = isClosed && commission && String(commission.winner_bidder_id) === String(bidderId);
+
   useEffect(() => {
     const savedTheme = localStorage.getItem('clientThemeKey');
     if (savedTheme && THEMES[savedTheme]) {
@@ -629,13 +637,7 @@ export default function ClientBid() {
     }
   };
 
-  // --- LOGIC CHECK TRẠNG THÁI ---
-  const accurateNowForCheck = new Date(new Date().getTime() - serverTimeOffset);
-  const isTimeOut = commission && (new Date(commission.end_time) - accurateNowForCheck <= 0);
-  const isClosed = isTimeOut || commission?.status === 'closed';
-  const isUpcoming = commission && commission.status === 'upcoming';
-  const topBid = bidHistory[0];
-  const isWinner = isClosed && commission && String(commission.winner_bidder_id) === String(bidderId);
+
 
   // PHẦN TRĂM TIẾN TRÌNH ĐẾN AB (MUA ĐỨT) & BƯỚC GIÁ NHANH
   const startPrice = commission ? parseFloat(commission.start_price) || 0 : 0;
