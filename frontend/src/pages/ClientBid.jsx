@@ -1075,7 +1075,7 @@ export default function ClientBid() {
                       disabled={isBidding}
                       className={`w-full sm:flex-[1.5] bg-gradient-to-r ${theme.primary} hover:${theme.primaryHover} text-white py-4 sm:py-5 px-4 rounded-2xl font-black text-base sm:text-lg transition-all shadow-lg ${theme.shadow} active:scale-95 disabled:opacity-50`} 
                     >
-                      {isBidding ? 'Đang xử lý...' : `Đấu giá (+${(parseFloat(commission.min_increase) || 20000).toLocaleString('vi-VN')} đ)`}
+                      {isBidding ? 'Đang xử lý...' : `Đặt Đấu Giá: ${Number(customBid || 0).toLocaleString('vi-VN')} đ`}
                     </button>
                   </div>
 
