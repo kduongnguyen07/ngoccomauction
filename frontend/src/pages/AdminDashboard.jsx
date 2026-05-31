@@ -225,6 +225,90 @@ export default function AdminDashboard() {
     return true;
   });
 
+  const renderDashboard = () => {
+    const activeCount = commissions.filter(c => c.status === 'active').length;
+    const paidCount = commissions.filter(c => c.is_paid).length;
+    const pendingCount = commissions.filter(c => c.status === 'closed' && !c.is_paid).length;
+
+    const collectedRevenue = commissions.filter(c => c.is_paid).reduce((sum, c) => sum + (parseFloat(c.current_price) * 0.5), 0);
+    const pendingRevenue = commissions.filter(c => c.status === 'closed' && !c.is_paid).reduce((sum, c) => sum + (parseFloat(c.current_price) * 0.5), 0);
+    
+    const closedCount = commissions.filter(c => c.status === 'closed').length;
+    const successRate = closedCount > 0 ? Math.round((paidCount / closedCount) * 100) : 100;
+
+    return (
+      <div className="space-y-6 sm:space-y-10 animate-in fade-in duration-500">
+        {/* STATS */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-6">
+          <StatCard icon={<Clock className="text-blue-500"/>} label="Đang đấu giá" value={activeCount} />
+          <StatCard icon={<CheckCircle2 className="text-green-500"/>} label="Đã cọc" value={paidCount} />
+          <StatCard icon={<ShieldAlert className="text-red-500"/>} label="Chờ cọc" value={pendingCount} />
+          <StatCard icon={<Gavel className="text-emerald-500"/>} label="Đã thu (50%)" value={collectedRevenue.toLocaleString('vi-VN') + ' đ'} />
+          <StatCard icon={<History className="text-amber-500"/>} label="Chờ thu (50%)" value={pendingRevenue.toLocaleString('vi-VN') + ' đ'} />
+          <StatCard icon={<CheckCircle2 className="text-indigo-500"/>} label="Tỷ lệ cọc" value={successRate + '%'} />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
+          <div className="lg:col-span-2 bg-white rounded-3xl sm:rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
+            <div className="p-5 sm:p-6 border-b border-gray-50 flex justify-between items-center">
+              <h2 className="text-lg sm:text-xl font-bold">Đợt đấu giá gần đây</h2>
+              <button onClick={() => setCurrentView('commissions')} className="text-indigo-600 font-bold text-sm hover:underline">Xem tất cả</button>
+            </div>
+            <div className="overflow-x-auto">
+              <CommissionTable data={commissions.slice(0, 5)} handleAction={handleAction} pending={pending} handleEditClick={handleEditClick} handleInspectBids={handleInspectBids} />
+            </div>
+          </div>
+
+          <div className="bg-white p-5 sm:p-8 rounded-3xl sm:rounded-[2rem] shadow-sm border border-gray-100 h-fit max-h-[85vh] overflow-y-auto">
+            <h2 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6 flex items-center gap-2"><Plus size={20} className="text-indigo-600"/> Tạo đợt mới</h2>
+            <form onSubmit={(e) => { 
+              e.preventDefault(); 
+              let formattedData;
+              try {
+                formattedData = {
+                  ...formData,
+                  startTime: formData.startTime ? new Date(formData.startTime).toISOString() : '',
+                  endTime: formData.endTime ? new Date(formData.endTime).toISOString() : ''
+                };
+              } catch (err) {
+                toast.error("Vui lòng nhập ngày giờ hợp lệ!");
+                return;
+              }
+              handleAction('/api/commissions', 'POST', formattedData); 
+            }} className="space-y-4">
+              <Input label="Tên Commission" placeholder="VD: Vẽ Chibi" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
+              <Input label="Giai đoạn" placeholder="VD: Batch #1" value={formData.phase} onChange={e => setFormData({...formData, phase: e.target.value})} />
+              <Input label="Giá khởi điểm (VND)" type="number" value={formData.startPrice} onChange={e => setFormData({...formData, startPrice: parseFloat(e.target.value) || 0})} />
+              <div className="grid grid-cols-2 gap-4">
+                <Input label="Bắt đầu" type="datetime-local" value={formData.startTime} onChange={e => setFormData({...formData, startTime: e.target.value})} />
+                <Input label="Kết thúc" type="datetime-local" value={formData.endTime} onChange={e => setFormData({...formData, endTime: e.target.value})} />
+              </div>
+              <Input label="Link ảnh minh hoạ (Tùy chọn)" placeholder="VD: https://imgur.com/xyz.png" value={formData.imageUrl} onChange={e => setFormData({...formData, imageUrl: e.target.value})} />
+              
+              <div className="border-t border-gray-100 pt-4 mt-4">
+                <h3 className="text-xs font-black text-gray-500 mb-3 uppercase tracking-wider">Luật Đấu Giá Cụ Thể</h3>
+                <div className="grid grid-cols-3 gap-2">
+                  <Input label="MI tối thiểu" type="number" value={formData.minIncrease} onChange={e => setFormData({...formData, minIncrease: parseFloat(e.target.value) || 0})} />
+                  <Input label="Tăng tối đa" type="number" placeholder="Không" value={formData.maxIncrease} onChange={e => setFormData({...formData, maxIncrease: e.target.value ? parseFloat(e.target.value) : ''})} />
+                  <Input label="Giá AB" type="number" value={formData.autoBuyPrice} onChange={e => setFormData({...formData, autoBuyPrice: parseFloat(e.target.value) || 0})} />
+                </div>
+              </div>
+
+              <div className="border-t border-gray-100 pt-4 mt-4 space-y-3">
+                <h3 className="text-xs font-black text-gray-500 uppercase tracking-wider">Quy định hiển thị</h3>
+                <Input label="Thanh Toán" value={formData.rulePayment} onChange={e => setFormData({...formData, rulePayment: e.target.value})} />
+                <Input label="Hủy Lượt / Trảm" value={formData.ruleDisqualify} onChange={e => setFormData({...formData, ruleDisqualify: e.target.value})} />
+                <Input label="Quyền Sử Dụng" value={formData.ruleUsage} onChange={e => setFormData({...formData, ruleUsage: e.target.value})} />
+              </div>
+
+              <button className="w-full bg-indigo-600 text-white py-3 sm:py-4 rounded-2xl font-bold shadow-lg hover:bg-indigo-700 transition-all mt-2">Kích hoạt ngay</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderSettings = () => (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 animate-in fade-in duration-500">
       <div className="bg-white p-5 sm:p-8 rounded-3xl sm:rounded-[2rem] shadow-sm border border-gray-100">
