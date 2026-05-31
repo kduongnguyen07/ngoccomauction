@@ -305,6 +305,14 @@ export default function ClientBid() {
 
   const activeMomoPhone = commission?.momo_phone || MOMO_PHONE_NUMBER;
 
+  const [usdVndRate, setUsdVndRate] = useState(25000); // default fallback
+
+  const formatUSD = (vndAmount) => {
+    if (!vndAmount || isNaN(vndAmount) || !usdVndRate) return '';
+    const usd = vndAmount / usdVndRate;
+    return `(~$${usd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD)`;
+  };
+
   // Theme & Mode states
   const [selectedThemeKey, setSelectedThemeKey] = useState('pink');
   const [showThemePanel, setShowThemePanel] = useState(false);
@@ -528,6 +536,7 @@ export default function ClientBid() {
       if (raw.ok) {
         const ans = await raw.json();
         setCommission(ans);
+        if (ans.usd_vnd_rate) setUsdVndRate(ans.usd_vnd_rate);
         setCurrentPrice(ans.current_price);
         const minIncrease = parseFloat(ans.min_increase) || 20000;
         setCustomBid(parseFloat(ans.current_price) + minIncrease);
@@ -899,6 +908,17 @@ export default function ClientBid() {
             </span>
           </div>
           
+          {usdVndRate && (
+            <div className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[11px] font-black transition-colors duration-500 ${
+              isDarkMode 
+                ? 'bg-slate-900/60 border-white/5 text-slate-400' 
+                : 'bg-slate-100/80 border-slate-200/80 text-slate-500'
+            }`}>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              Tỷ giá: 1 USD = {usdVndRate.toLocaleString('vi-VN')} đ (Yahoo Finance)
+            </div>
+          )}
+          
           <div className="flex items-center gap-2 sm:gap-3">
             {/* Nút Light/Dark Mode */}
             <button 
@@ -1066,6 +1086,11 @@ export default function ClientBid() {
                   }`}>
                     {parseFloat(currentPrice).toLocaleString('vi-VN')}
                     <span className={`text-xl sm:text-2xl ml-1 font-bold ${isDarkMode ? 'text-slate-400' : 'text-slate-400'}`}>đ</span>
+                    {usdVndRate && (
+                      <span className={`text-sm sm:text-lg font-bold ml-3 block sm:inline-block opacity-75 ${isDarkMode ? 'text-emerald-400' : 'text-emerald-600'}`}>
+                        {formatUSD(currentPrice)}
+                      </span>
+                    )}
                   </h2>
                 </div>
                 {topBid && (
@@ -1103,11 +1128,11 @@ export default function ClientBid() {
                     </div>
                   </div>
                   <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 mt-2">
-                    <span>SB: {startPrice.toLocaleString('vi-VN')} đ</span>
+                    <span>SB: {startPrice.toLocaleString('vi-VN')} đ {usdVndRate && <span className="opacity-60 font-medium">/ {formatUSD(startPrice)}</span>}</span>
                     {progressPercent >= 75 ? (
                       <span className="text-rose-500 font-extrabold animate-pulse">🔥 Sắp chạm mốc Mua Đứt!</span>
                     ) : (
-                      <span>AB: {autoBuyPrice.toLocaleString('vi-VN')} đ</span>
+                      <span>AB: {autoBuyPrice.toLocaleString('vi-VN')} đ {usdVndRate && <span className="opacity-60 font-medium">/ {formatUSD(autoBuyPrice)}</span>}</span>
                     )}
                   </div>
                 </div>
@@ -1187,7 +1212,12 @@ export default function ClientBid() {
                       disabled={isBidding}
                       className={`w-full sm:flex-[1.5] bg-gradient-to-r ${theme.primary} hover:${theme.primaryHover} text-white py-4 sm:py-5 px-4 rounded-2xl font-black text-base sm:text-lg transition-all shadow-lg ${theme.shadow} active:scale-95 disabled:opacity-50`} 
                     >
-                      {isBidding ? 'Đang xử lý...' : `Đặt Đấu Giá: ${Number(customBid || 0).toLocaleString('vi-VN')} đ`}
+                      {isBidding ? 'Đang xử lý...' : (
+                        <span>
+                          Đặt Đấu Giá: {Number(customBid || 0).toLocaleString('vi-VN')} đ
+                          {usdVndRate && <span className="text-xs font-semibold ml-1.5 opacity-80 block sm:inline"> {formatUSD(Number(customBid || 0))}</span>}
+                        </span>
+                      )}
                     </button>
                   </div>
 
@@ -1206,7 +1236,7 @@ export default function ClientBid() {
                         : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200/80 shadow-slate-200/50'
                     }`}
                   >
-                    MUA NGAY (AB) {parseFloat(commission.auto_buy_price || 1000000).toLocaleString('vi-VN')} đ
+                    MUA NGAY (AB) {parseFloat(commission.auto_buy_price || 1000000).toLocaleString('vi-VN')} đ {usdVndRate && <span className="text-xs font-bold opacity-80">/ {formatUSD(parseFloat(commission.auto_buy_price || 1000000))}</span>}
                   </button>
                 </div>
               ) : (
@@ -1281,7 +1311,10 @@ export default function ClientBid() {
                     <div className="flex justify-between items-center border-t border-dashed border-slate-800/10 pt-2">
                       <div>
                         <span className="text-[10px] text-slate-400 font-bold block">Số tiền cần đặt cọc (50%):</span>
-                        <span className="font-black text-sm sm:text-base text-rose-500">{(parseFloat(topBid.bid_amount) / 2).toLocaleString('vi-VN')} đ</span>
+                        <span className="font-black text-sm sm:text-base text-rose-500">
+                          {(parseFloat(topBid.bid_amount) / 2).toLocaleString('vi-VN')} đ
+                          {usdVndRate && <span className="text-xs font-bold opacity-80 ml-1.5">/ {formatUSD(parseFloat(topBid.bid_amount) / 2)}</span>}
+                        </span>
                       </div>
                       <button 
                         onClick={() => handleCopy((parseFloat(topBid.bid_amount) / 2).toString(), 'Số tiền cọc')}
@@ -1400,6 +1433,11 @@ export default function ClientBid() {
                     }`}>
                       {parseFloat(bid.bid_amount).toLocaleString('vi-VN')} đ
                     </div>
+                    {usdVndRate && (
+                      <div className={`text-[10px] sm:text-xs font-bold opacity-70 ${isABWinner ? 'text-white' : 'text-slate-400'}`}>
+                        {formatUSD(parseFloat(bid.bid_amount))}
+                      </div>
+                    )}
                     {isABWinner && <span className={`inline-block text-[9px] font-black uppercase tracking-widest ${selectedThemeKey === 'pink' ? 'bg-white text-pink-600' : 'bg-white text-slate-900'} px-2 py-0.5 rounded-full -mt-1`}>Winner</span>}
                   </div>
                 </div>

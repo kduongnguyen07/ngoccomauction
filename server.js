@@ -67,6 +67,39 @@ const MIN_INCREASE = parseFloat(process.env.MIN_INCREASE) || 20000;
 const rawFrontend = process.env.FRONTEND_URL || 'http://localhost:5173';
 const FRONTEND_URL = rawFrontend.endsWith('/') ? rawFrontend.slice(0, -1) : rawFrontend;
 
+let usdVndRate = 25400; // default fallback
+
+const fetchUsdVndRate = () => {
+  const http = require('https');
+  const url = 'https://query1.finance.yahoo.com/v8/finance/chart/USDVND=X';
+  http.get(url, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    }
+  }, (res) => {
+    let data = '';
+    res.on('data', (chunk) => { data += chunk; });
+    res.on('end', () => {
+      try {
+        const json = JSON.parse(data);
+        const rate = json.chart.result[0].meta.regularMarketPrice;
+        if (rate && typeof rate === 'number' && rate > 10000 && rate < 40000) {
+          usdVndRate = rate;
+          console.log(`Updated dynamic USD/VND rate: ${usdVndRate}`);
+        }
+      } catch (e) {
+        console.error('Failed to parse Yahoo Finance rate JSON:', e.message);
+      }
+    });
+  }).on('error', (err) => {
+    console.error('Error fetching Yahoo Finance rate:', err.message);
+  });
+};
+
+// Fetch rate on startup and schedule hourly update
+fetchUsdVndRate();
+setInterval(fetchUsdVndRate, 3600000);
+
 // Setup Socket.io with wildcard CORS
 const io = new Server(server, {
   cors: {
@@ -524,7 +557,7 @@ app.get('/api/commissions/active', async (req, res, next) => {
     const settingsRes = await client.query('SELECT momo_phone FROM settings WHERE id = 1');
     const momo_phone = settingsRes.rows[0]?.momo_phone || process.env.VITE_MOMO_PHONE || '';
     
-    res.json({ ...ans.rows[0], momo_phone, server_now: new Date().toISOString() });
+    res.json({ ...ans.rows[0], momo_phone, usd_vnd_rate: usdVndRate, server_now: new Date().toISOString() });
   } catch (e) {
     next(e);
   } finally {
