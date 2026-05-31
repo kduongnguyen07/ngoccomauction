@@ -112,10 +112,24 @@ export default function AdminDashboard() {
         fetch(`${API_URL}/api/admin/bidders`, { headers }),
         fetch(`${API_URL}/api/admin/settings`, { headers })
       ]);
-      if (resCom.status === 401 || resCom.status === 403) navigate('/admin/login');
-      setCommissions(await resCom.json());
-      setLogs(await resLogs.json());
-      setBidders(await resBidders.json());
+      
+      if (resCom.status === 401 || resCom.status === 403) {
+        navigate('/admin/login');
+        return;
+      }
+      
+      if (resCom.ok) {
+        const comData = await resCom.json();
+        if (Array.isArray(comData)) setCommissions(comData);
+      }
+      if (resLogs.ok) {
+        const logsData = await resLogs.json();
+        if (Array.isArray(logsData)) setLogs(logsData);
+      }
+      if (resBidders.ok) {
+        const biddersData = await resBidders.json();
+        if (Array.isArray(biddersData)) setBidders(biddersData);
+      }
       if (resSettings.ok) {
         const settingsJson = await resSettings.json();
         setSettingsData({
