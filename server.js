@@ -22,6 +22,44 @@ if (!process.env.JWT_SECRET) {
 const app = express();
 const server = http.createServer(app);
 
+// Initialize database settings table
+(async () => {
+  let client;
+  try {
+    client = await pool.connect();
+    // Create settings table if not exists
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS settings (
+        id INT PRIMARY KEY,
+        momo_phone VARCHAR(255),
+        rule_payment VARCHAR(500),
+        rule_disqualify VARCHAR(500),
+        rule_usage VARCHAR(500),
+        admin_password_hash VARCHAR(255)
+      )
+    `);
+    
+    // Seed settings table if empty
+    const checkSettings = await client.query('SELECT COUNT(*) FROM settings');
+    if (parseInt(checkSettings.rows[0].count) === 0) {
+      await client.query(`
+        INSERT INTO settings (id, momo_phone, rule_payment, rule_disqualify, rule_usage)
+        VALUES (1, $1, $2, $3, $4)
+      `, [
+        process.env.VITE_MOMO_PHONE || '0961234567',
+        'Trong vòng 24h kể từ khi phiên đấu kết thúc',
+        'Nghiêm cấm tự ý huỷ lượt đấu giá / bùng cọc',
+        'Mục đích cá nhân (Thương mại sẽ tính phí riêng)'
+      ]);
+      console.log('Seeded default settings in database');
+    }
+  } catch (err) {
+    console.error('Error initializing settings table:', err);
+  } finally {
+    if (client) client.release();
+  }
+})();
+
 // Constants
 const AUTO_BUY_PRICE = parseFloat(process.env.AUTO_BUY_PRICE) || 1000000;
 const MIN_INCREASE = parseFloat(process.env.MIN_INCREASE) || 20000;
@@ -295,6 +333,123 @@ app.put('/api/commissions/:id/disqualify', authMiddleware, async (req, res, next
   }
 });
 
+// Settings & Admin extra APIs
+app.get('/api/admin/settings', authMiddleware, async (req, res, next) => {
+  let client;
+  try {
+    client = await pool.connect();
+    const ans = await client.query('SELECT momo_phone, rule_payment, rule_disqualify, rule_usage FROM settings WHERE id = 1');
+    res.json(ans.rows[0] || {});
+  } catch (e) {
+    next(e);
+  } finally {
+    if (client) client.release();
+  }
+});
+
+app.put('/api/admin/settings', authMiddleware, async (req, res, next) => {
+  const { momo_phone, rule_payment, rule_disqualify, rule_usage } = req.body;
+  let client;
+  try {
+    client = await pool.connect();
+    await client.query(`
+      UPDATE settings 
+      SET momo_phone = $1, rule_payment = $2, rule_disqualify = $3, rule_usage = $4
+      WHERE id = 1
+    `, [momo_phone, rule_payment, rule_disqualify, rule_usage]);
+    notifyAll();
+    res.json({ success: true });
+  } catch (e) {
+    next(e);
+  } finally {
+    if (client) client.release();
+  }
+});
+
+app.put('/api/admin/settings/password', authMiddleware, async (req, res, next) => {
+  const { oldPassword, newPassword } = req.body;
+  if (!newPassword || newPassword.length < 6) {
+    return res.status(400).json({ error: 'Mật khẩu mới phải có ít nhất 6 ký tự.' });
+  }
+  let client;
+  try {
+    client = await pool.connect();
+    const settingsRes = await client.query('SELECT admin_password_hash FROM settings WHERE id = 1');
+    const dbHash = settingsRes.rows[0]?.admin_password_hash;
+    
+    let isOldValid = false;
+    if (dbHash) {
+      isOldValid = bcrypt.compareSync(oldPassword, dbHash);
+    } else {
+      isOldValid = bcrypt.compareSync(oldPassword, ADMIN_PASS_HASH);
+    }
+    
+    if (!isOldValid) {
+      return res.status(400).json({ error: 'Mật khẩu cũ không chính xác.' });
+    }
+    
+    const newHash = bcrypt.hashSync(newPassword, 10);
+    await client.query('UPDATE settings SET admin_password_hash = $1 WHERE id = 1', [newHash]);
+    res.json({ success: true });
+  } catch (e) {
+    next(e);
+  } finally {
+    if (client) client.release();
+  }
+});
+
+app.delete('/api/commissions/:id', authMiddleware, async (req, res, next) => {
+  const { id } = req.params;
+  let client;
+  try {
+    client = await pool.connect();
+    await client.query('BEGIN');
+    
+    const comRes = await client.query('SELECT status FROM commissions WHERE id = $1', [id]);
+    if (comRes.rows.length === 0) {
+      throw new Error('Commission không tồn tại');
+    }
+    
+    if (comRes.rows[0].status === 'active') {
+      return res.status(400).json({ error: 'Không thể xóa commission đang hoạt động!' });
+    }
+    
+    await client.query('DELETE FROM commissions WHERE id = $1', [id]);
+    await client.query('COMMIT');
+    notifyAll();
+    res.json({ success: true });
+  } catch (e) {
+    if (client) await client.query('ROLLBACK');
+    if (e.message === 'Commission không tồn tại') {
+      res.status(404).json({ error: e.message });
+    } else {
+      next(e);
+    }
+  } finally {
+    if (client) client.release();
+  }
+});
+
+app.get('/api/admin/commissions/:id/bids', authMiddleware, async (req, res, next) => {
+  const { id } = req.params;
+  let client;
+  try {
+    client = await pool.connect();
+    const ans = await client.query(`
+      SELECT b.id, b.bid_amount, b.created_at, bi.full_name, bi.contact_info, bi.id as bidder_id
+      FROM bids b
+      JOIN bidders bi ON b.bidder_id = bi.id
+      WHERE b.commission_id = $1
+      ORDER BY b.created_at DESC
+    `, [id]);
+    res.json(ans.rows);
+  } catch (e) {
+    next(e);
+  } finally {
+    if (client) client.release();
+  }
+});
+
 app.get('/api/admin/logs', authMiddleware, async (req, res, next) => {
   let client;
   try {
@@ -364,7 +519,12 @@ app.get('/api/commissions/active', async (req, res, next) => {
       LIMIT 1
     `);
     if (ans.rows.length === 0) return res.status(404).json({ message: 'Trống' });
-    res.json({ ...ans.rows[0], server_now: new Date().toISOString() });
+    
+    // Get dynamic momo_phone from settings
+    const settingsRes = await client.query('SELECT momo_phone FROM settings WHERE id = 1');
+    const momo_phone = settingsRes.rows[0]?.momo_phone || process.env.VITE_MOMO_PHONE || '';
+    
+    res.json({ ...ans.rows[0], momo_phone, server_now: new Date().toISOString() });
   } catch (e) {
     next(e);
   } finally {
@@ -461,13 +621,32 @@ app.post('/api/bid', bidLimiter, bidderAuthMiddleware, async (req, res, next) =>
   }
 });
 
-app.post('/api/admin/login', (req, res) => {
+app.post('/api/admin/login', async (req, res) => {
   const { password } = req.body;
-  if (bcrypt.compareSync(password, ADMIN_PASS_HASH)) {
-    const token = jwt.sign({ role: 'admin' }, JWT_SECRET, { expiresIn: '24h' });
-    return res.json({ token });
+  let client;
+  try {
+    client = await pool.connect();
+    const settingsRes = await client.query('SELECT admin_password_hash FROM settings WHERE id = 1');
+    const dbHash = settingsRes.rows[0]?.admin_password_hash;
+    
+    let isMatched = false;
+    if (dbHash) {
+      isMatched = bcrypt.compareSync(password, dbHash);
+    } else {
+      isMatched = bcrypt.compareSync(password, ADMIN_PASS_HASH);
+    }
+    
+    if (isMatched) {
+      const token = jwt.sign({ role: 'admin' }, JWT_SECRET, { expiresIn: '24h' });
+      return res.json({ token });
+    }
+    res.status(401).json({ error: 'Wrong password' });
+  } catch (e) {
+    console.error('Login error:', e);
+    res.status(500).json({ error: 'Lỗi máy chủ: ' + e.message });
+  } finally {
+    if (client) client.release();
   }
-  res.status(401).json({ error: 'Wrong password' });
 });
 
 // --- DIAGNOSTIC ENDPOINT ---

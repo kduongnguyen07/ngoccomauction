@@ -36,6 +36,23 @@ export default function AdminDashboard() {
   const [bidders, setBidders] = useState([]);
   const [pending, setPending] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [settingsData, setSettingsData] = useState({
+    momoPhone: '',
+    rulePayment: '',
+    ruleDisqualify: '',
+    ruleUsage: ''
+  });
+  const [passwordData, setPasswordData] = useState({
+    oldPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [inspectingCommissionId, setInspectingCommissionId] = useState(null);
+  const [inspectingCommissionTitle, setInspectingCommissionTitle] = useState('');
+  const [inspectingBids, setInspectingBids] = useState([]);
+  const [isLoadingBids, setIsLoadingBids] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     phase: '',
@@ -86,19 +103,35 @@ export default function AdminDashboard() {
   const authHeader = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
 
   const fetchData = useCallback(async () => {
-    // [FIX] Đọc token trong lúc fetch, không capture từ closure — tránh stale token
     const currentToken = localStorage.getItem('adminToken');
     const headers = { 'Authorization': `Bearer ${currentToken}`, 'Content-Type': 'application/json' };
     try {
-      const [resCom, resLogs, resBidders] = await Promise.all([
+      const [resCom, resLogs, resBidders, resSettings] = await Promise.all([
         fetch(`${API_URL}/api/commissions`, { headers }),
         fetch(`${API_URL}/api/admin/logs`, { headers }),
-        fetch(`${API_URL}/api/admin/bidders`, { headers })
+        fetch(`${API_URL}/api/admin/bidders`, { headers }),
+        fetch(`${API_URL}/api/admin/settings`, { headers })
       ]);
       if (resCom.status === 401 || resCom.status === 403) navigate('/admin/login');
       setCommissions(await resCom.json());
       setLogs(await resLogs.json());
       setBidders(await resBidders.json());
+      if (resSettings.ok) {
+        const settingsJson = await resSettings.json();
+        setSettingsData({
+          momoPhone: settingsJson.momo_phone || '',
+          rulePayment: settingsJson.rule_payment || '',
+          ruleDisqualify: settingsJson.rule_disqualify || '',
+          ruleUsage: settingsJson.rule_usage || ''
+        });
+        
+        setFormData(prev => ({
+          ...prev,
+          rulePayment: prev.rulePayment === 'Trong vòng 24h kể từ khi phiên đấu kết thúc' ? (settingsJson.rule_payment || prev.rulePayment) : prev.rulePayment,
+          ruleDisqualify: prev.ruleDisqualify === 'Nghiêm cấm tự ý huỷ lượt đấu giá / bùng cọc' ? (settingsJson.rule_disqualify || prev.ruleDisqualify) : prev.ruleDisqualify,
+          ruleUsage: prev.ruleUsage === 'Mục đích cá nhân (Thương mại sẽ tính phí riêng)' ? (settingsJson.rule_usage || prev.ruleUsage) : prev.ruleUsage
+        }));
+      }
     } catch (e) { console.error(e); }
   }, [navigate]);
 
@@ -139,73 +172,135 @@ export default function AdminDashboard() {
     setIsProcessing(false);
   };
 
-  // --- RENDER CÁC VIEW KHÁC NHAU ---
-  
-  const renderDashboard = () => (
-    <div className="space-y-6 sm:space-y-10 animate-in fade-in duration-500">
-      {/* STATS */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-        <StatCard icon={<Clock className="text-blue-500"/>} label="Đang đấu giá" value={commissions.filter(c => c.status === 'active').length} />
-        <StatCard icon={<CheckCircle2 className="text-green-500"/>} label="Đã hoàn thành" value={commissions.filter(c => c.is_paid).length} />
-        <StatCard icon={<ShieldAlert className="text-red-500"/>} label="Chờ thanh toán" value={commissions.filter(c => c.status === 'closed' && !c.is_paid).length} />
+  const handleInspectBids = async (id, title) => {
+    setInspectingCommissionId(id);
+    setInspectingCommissionTitle(title);
+    setInspectingBids([]);
+    setIsLoadingBids(true);
+    
+    const currentToken = localStorage.getItem('adminToken');
+    const headers = { 'Authorization': `Bearer ${currentToken}`, 'Content-Type': 'application/json' };
+    try {
+      const res = await fetch(`${API_URL}/api/admin/commissions/${id}/bids`, { headers });
+      if (res.ok) {
+        setInspectingBids(await res.json());
+      } else {
+        toast.error("Không thể lấy lịch sử đấu giá.");
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Lỗi mạng!");
+    } finally {
+      setIsLoadingBids(false);
+    }
+  };
+
+  const filteredCommissions = commissions.filter(c => {
+    if (statusFilter === 'active' && c.status !== 'active') return false;
+    if (statusFilter === 'upcoming' && c.status !== 'upcoming') return false;
+    if (statusFilter === 'pending' && !(c.status === 'closed' && !c.is_paid)) return false;
+    if (statusFilter === 'paid' && !c.is_paid) return false;
+    
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      const titleMatch = c.title?.toLowerCase().includes(q);
+      const phaseMatch = c.phase?.toLowerCase().includes(q);
+      const winnerMatch = c.winner_name?.toLowerCase().includes(q);
+      return titleMatch || phaseMatch || winnerMatch;
+    }
+    return true;
+  });
+
+  const renderSettings = () => (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 animate-in fade-in duration-500">
+      <div className="bg-white p-5 sm:p-8 rounded-3xl sm:rounded-[2rem] shadow-sm border border-gray-100">
+        <h2 className="text-xl sm:text-2xl font-bold mb-4 flex items-center gap-2">
+          <Settings size={22} className="text-indigo-600"/> Cấu hình hệ thống
+        </h2>
+        <p className="text-gray-400 text-xs sm:text-sm mb-6">Các quy định mặc định khi tạo mới đợt đấu giá và SĐT nhận tiền.</p>
+        
+        <form onSubmit={async (e) => {
+          e.preventDefault();
+          await handleAction('/api/admin/settings', 'PUT', {
+            momo_phone: settingsData.momoPhone,
+            rule_payment: settingsData.rulePayment,
+            rule_disqualify: settingsData.ruleDisqualify,
+            rule_usage: settingsData.ruleUsage
+          });
+        }} className="space-y-4">
+          <Input 
+            label="Số điện thoại MoMo / Tài khoản ngân hàng" 
+            placeholder="VD: 0961234567" 
+            value={settingsData.momoPhone} 
+            onChange={e => setSettingsData({...settingsData, momoPhone: e.target.value})} 
+          />
+          <Input 
+            label="Luật thanh toán mặc định" 
+            placeholder="VD: Trong vòng 24h kể từ khi phiên đấu kết thúc" 
+            value={settingsData.rulePayment} 
+            onChange={e => setSettingsData({...settingsData, rulePayment: e.target.value})} 
+          />
+          <Input 
+            label="Luật hủy lượt mặc định" 
+            placeholder="VD: Nghiêm cấm tự ý huỷ lượt đấu giá / bùng cọc" 
+            value={settingsData.ruleDisqualify} 
+            onChange={e => setSettingsData({...settingsData, ruleDisqualify: e.target.value})} 
+          />
+          <Input 
+            label="Quyền sử dụng mặc định" 
+            placeholder="VD: Mục đích cá nhân (Thương mại sẽ tính phí riêng)" 
+            value={settingsData.ruleUsage} 
+            onChange={e => setSettingsData({...settingsData, ruleUsage: e.target.value})} 
+          />
+          <button className="w-full bg-indigo-600 text-white py-3 sm:py-4 rounded-2xl font-bold shadow-lg hover:bg-indigo-700 transition-all mt-2">
+            Lưu cấu hình
+          </button>
+        </form>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
-        <div className="lg:col-span-2 bg-white rounded-3xl sm:rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
-          <div className="p-5 sm:p-6 border-b border-gray-50 flex justify-between items-center">
-            <h2 className="text-lg sm:text-xl font-bold">Đợt đấu giá gần đây</h2>
-            <button onClick={() => setCurrentView('commissions')} className="text-indigo-600 font-bold text-sm hover:underline">Xem tất cả</button>
-          </div>
-          <div className="overflow-x-auto">
-            <CommissionTable data={commissions.slice(0, 5)} handleAction={handleAction} pending={pending} handleEditClick={handleEditClick} />
-          </div>
-        </div>
-
-        <div className="bg-white p-5 sm:p-8 rounded-3xl sm:rounded-[2rem] shadow-sm border border-gray-100 h-fit max-h-[85vh] overflow-y-auto">
-          <h2 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6 flex items-center gap-2"><Plus size={20} className="text-indigo-600"/> Tạo đợt mới</h2>
-          <form onSubmit={(e) => { 
-            e.preventDefault(); 
-            let formattedData;
-            try {
-              formattedData = {
-                ...formData,
-                startTime: formData.startTime ? new Date(formData.startTime).toISOString() : '',
-                endTime: formData.endTime ? new Date(formData.endTime).toISOString() : ''
-              };
-            } catch (err) {
-              toast.error("Vui lòng nhập ngày giờ hợp lệ!");
-              return;
-            }
-            handleAction('/api/commissions', 'POST', formattedData); 
-          }} className="space-y-4">
-            <Input label="Tên Commission" placeholder="VD: Vẽ Chibi" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
-            <Input label="Giai đoạn" placeholder="VD: Batch #1" value={formData.phase} onChange={e => setFormData({...formData, phase: e.target.value})} />
-            <Input label="Giá khởi điểm (VND)" type="number" value={formData.startPrice} onChange={e => setFormData({...formData, startPrice: parseFloat(e.target.value) || 0})} />
-            <div className="grid grid-cols-2 gap-4">
-              <Input label="Bắt đầu" type="datetime-local" value={formData.startTime} onChange={e => setFormData({...formData, startTime: e.target.value})} />
-              <Input label="Kết thúc" type="datetime-local" value={formData.endTime} onChange={e => setFormData({...formData, endTime: e.target.value})} />
-            </div>
-            <Input label="Link ảnh minh hoạ (Tùy chọn)" placeholder="VD: https://imgur.com/xyz.png" value={formData.imageUrl} onChange={e => setFormData({...formData, imageUrl: e.target.value})} />
-            
-            <div className="border-t border-gray-100 pt-4 mt-4">
-              <h3 className="text-xs font-black text-gray-500 mb-3 uppercase tracking-wider">Luật Đấu Giá Cụ Thể</h3>
-              <div className="grid grid-cols-3 gap-2">
-                <Input label="MI tối thiểu" type="number" value={formData.minIncrease} onChange={e => setFormData({...formData, minIncrease: parseFloat(e.target.value) || 0})} />
-                <Input label="Tăng tối đa" type="number" placeholder="Không" value={formData.maxIncrease} onChange={e => setFormData({...formData, maxIncrease: e.target.value ? parseFloat(e.target.value) : ''})} />
-                <Input label="Giá AB" type="number" value={formData.autoBuyPrice} onChange={e => setFormData({...formData, autoBuyPrice: parseFloat(e.target.value) || 0})} />
-              </div>
-            </div>
-
-            <div className="border-t border-gray-100 pt-4 mt-4 space-y-3">
-              <h3 className="text-xs font-black text-gray-500 uppercase tracking-wider">Quy định hiển thị</h3>
-              <Input label="Thanh Toán" value={formData.rulePayment} onChange={e => setFormData({...formData, rulePayment: e.target.value})} />
-              <Input label="Hủy Lượt / Trảm" value={formData.ruleDisqualify} onChange={e => setFormData({...formData, ruleDisqualify: e.target.value})} />
-              <Input label="Quyền Sử Dụng" value={formData.ruleUsage} onChange={e => setFormData({...formData, ruleUsage: e.target.value})} />
-            </div>
-
-            <button className="w-full bg-indigo-600 text-white py-3 sm:py-4 rounded-2xl font-bold shadow-lg hover:bg-indigo-700 transition-all mt-2">Kích hoạt ngay</button>
-          </form>
-        </div>
+      <div className="bg-white p-5 sm:p-8 rounded-3xl sm:rounded-[2rem] shadow-sm border border-gray-100 h-fit">
+        <h2 className="text-xl sm:text-2xl font-bold mb-4 flex items-center gap-2">
+          <LogOut size={22} className="rotate-180 text-red-500"/> Đổi mật khẩu Admin
+        </h2>
+        <p className="text-gray-400 text-xs sm:text-sm mb-6">Thay đổi mật khẩu đăng nhập vào bảng quản trị.</p>
+        
+        <form onSubmit={async (e) => {
+          e.preventDefault();
+          if (passwordData.newPassword !== passwordData.confirmPassword) {
+            toast.error("Xác nhận mật khẩu mới không khớp!");
+            return;
+          }
+          await handleAction('/api/admin/settings/password', 'PUT', {
+            oldPassword: passwordData.oldPassword,
+            newPassword: passwordData.newPassword
+          });
+          setPasswordData({ oldPassword: '', newPassword: '', confirmPassword: '' });
+        }} className="space-y-4">
+          <Input 
+            label="Mật khẩu hiện tại" 
+            type="password" 
+            placeholder="••••••••" 
+            value={passwordData.oldPassword} 
+            onChange={e => setPasswordData({...passwordData, oldPassword: e.target.value})} 
+          />
+          <Input 
+            label="Mật khẩu mới (Tối thiểu 6 ký tự)" 
+            type="password" 
+            placeholder="••••••••" 
+            value={passwordData.newPassword} 
+            onChange={e => setPasswordData({...passwordData, newPassword: e.target.value})} 
+          />
+          <Input 
+            label="Xác nhận mật khẩu mới" 
+            type="password" 
+            placeholder="••••••••" 
+            value={passwordData.confirmPassword} 
+            onChange={e => setPasswordData({...passwordData, confirmPassword: e.target.value})} 
+          />
+          <button className="w-full bg-red-500 text-white py-3 sm:py-4 rounded-2xl font-bold shadow-lg hover:bg-red-650 hover:bg-red-650 transition-all mt-2">
+            Đổi mật khẩu
+          </button>
+        </form>
       </div>
     </div>
   );
@@ -344,7 +439,13 @@ export default function AdminDashboard() {
             </button>
             <div className="relative flex-1 sm:w-96">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-              <input type="text" placeholder="Tìm kiếm thông tin..." className="w-full pl-12 pr-4 py-3 bg-white border border-gray-100 rounded-2xl focus:ring-2 focus:ring-indigo-500/10 outline-none shadow-sm" />
+              <input 
+                type="text" 
+                placeholder="Tìm kiếm thông tin..." 
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 bg-white border border-gray-100 rounded-2xl focus:ring-2 focus:ring-indigo-500/10 outline-none shadow-sm" 
+              />
             </div>
           </div>
           <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto">
@@ -369,6 +470,7 @@ export default function AdminDashboard() {
             })()}
             {currentView === 'commissions' && "Quản lý Commissions"}
             {currentView === 'logs' && "Người tham gia & Nhật ký giao dịch"}
+            {currentView === 'settings' && "Cấu hình hệ thống"}
           </h1>
           <p className="text-gray-400 font-medium uppercase text-[10px] tracking-[0.2em]">Hệ thống đấu giá Commission v2.0</p>
         </div>
@@ -376,12 +478,128 @@ export default function AdminDashboard() {
         {/* SWITCH VIEWS */}
         {currentView === 'dashboard' && renderDashboard()}
         {currentView === 'commissions' && (
-          <div className="bg-white rounded-3xl sm:rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden overflow-x-auto">
-            <CommissionTable data={commissions} handleAction={handleAction} pending={pending} handleEditClick={handleEditClick} />
+          <div className="space-y-6 animate-in fade-in duration-500">
+            <div className="flex flex-wrap gap-2 items-center bg-gray-100/50 p-1.5 rounded-2xl w-fit">
+              {[
+                { key: 'all', label: 'Tất cả' },
+                { key: 'active', label: 'Đang hoạt động' },
+                { key: 'upcoming', label: 'Sắp diễn ra' },
+                { key: 'pending', label: 'Chờ thanh toán' },
+                { key: 'paid', label: 'Đã thanh toán' }
+              ].map(tab => (
+                <button
+                  key={tab.key}
+                  onClick={() => setStatusFilter(tab.key)}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                    statusFilter === tab.key
+                      ? 'bg-white text-indigo-600 shadow-sm shadow-indigo-100/20'
+                      : 'text-gray-500 hover:text-gray-900'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+            <div className="bg-white rounded-3xl sm:rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
+              <div className="overflow-x-auto">
+                <CommissionTable 
+                  data={filteredCommissions} 
+                  handleAction={handleAction} 
+                  pending={pending} 
+                  handleEditClick={handleEditClick} 
+                  handleInspectBids={handleInspectBids}
+                />
+              </div>
+            </div>
           </div>
         )}
         {currentView === 'logs' && renderLogs()}
+        {currentView === 'settings' && renderSettings()}
       </main>
+
+      {/* BIDS INSPECTOR MODAL */}
+      {inspectingCommissionId && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 w-full max-w-2xl max-h-[85vh] overflow-y-auto shadow-2xl border border-gray-100 animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Lịch sử đấu giá chi tiết</h2>
+                <p className="text-xs text-gray-400 font-bold mt-1 uppercase tracking-wider">{inspectingCommissionTitle}</p>
+              </div>
+              <button 
+                onClick={() => setInspectingCommissionId(null)} 
+                className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+              >
+                &times;
+              </button>
+            </div>
+            
+            {isLoadingBids ? (
+              <div className="py-20 text-center text-gray-400 font-bold animate-pulse">Đang tải lịch sử...</div>
+            ) : inspectingBids.length === 0 ? (
+              <div className="py-20 text-center text-gray-400 italic">Chưa có lượt đặt giá nào cho commission này.</div>
+            ) : (
+              <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2">
+                {inspectingBids.map((bid, index) => {
+                  const isTopBid = index === 0;
+                  return (
+                    <div 
+                      key={bid.id} 
+                      className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${
+                        isTopBid 
+                          ? 'bg-indigo-50/50 border-indigo-200 shadow-sm shadow-indigo-100/50' 
+                          : 'bg-gray-50/50 border-gray-100'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm ${
+                          isTopBid ? 'bg-indigo-600 text-white shadow-md' : 'bg-gray-100 text-gray-500'
+                        }`}>
+                          #{inspectingBids.length - index}
+                        </div>
+                        <div>
+                          <div className="font-bold text-gray-900 text-sm flex items-center gap-2">
+                            {bid.full_name}
+                            {isTopBid && (
+                              <span className="bg-indigo-100 text-indigo-700 text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md">
+                                Top 1
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[10px] text-gray-400 font-bold mt-0.5">
+                            {bid.contact_info.startsWith('http') ? (
+                              <a href={bid.contact_info} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">
+                                {bid.contact_info}
+                              </a>
+                            ) : bid.contact_info}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className={`font-black tracking-tight ${isTopBid ? 'text-indigo-600 text-base sm:text-lg' : 'text-slate-800 text-sm sm:text-base'}`}>
+                          {parseFloat(bid.bid_amount).toLocaleString('vi-VN')} đ
+                        </div>
+                        <div className="text-[9px] text-gray-400 font-medium mt-0.5">
+                          {new Date(bid.created_at).toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            
+            <div className="flex justify-end pt-6 mt-6 border-t border-gray-100">
+              <button 
+                onClick={() => setInspectingCommissionId(null)} 
+                className="px-6 py-3 rounded-2xl bg-gray-100 text-gray-600 font-bold hover:bg-gray-200 transition-colors"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* SỬA LUẬT MODAL */}
       {editingCommission && (
@@ -454,7 +672,7 @@ export default function AdminDashboard() {
 
 // --- SUB-COMPONENTS ---
 
-function CommissionTable({ data, handleAction, pending, handleEditClick }) {
+function CommissionTable({ data, handleAction, pending, handleEditClick, handleInspectBids }) {
   return (
     <table className="w-full text-left min-w-[700px]">
       <thead className="bg-[#FBFBFE] text-[11px] font-bold text-gray-400 uppercase tracking-wider">
@@ -492,6 +710,7 @@ function CommissionTable({ data, handleAction, pending, handleEditClick }) {
               </td>
               <td className="px-4 sm:px-8 py-4 sm:py-6 text-right">
                 <div className="flex flex-wrap gap-1.5 justify-end">
+                  <ActionButton label="Lịch sử" onClick={() => handleInspectBids && handleInspectBids(c.id, c.title)} />
                   {(c.status === 'upcoming' || c.status === 'active') && handleEditClick && (
                     <ActionButton label="Sửa luật" color="orange" onClick={() => handleEditClick(c)} />
                   )}
@@ -503,6 +722,16 @@ function CommissionTable({ data, handleAction, pending, handleEditClick }) {
                       <ActionButton label="Huỷ lượt" color="red" isOverdue={isOverdue} onClick={() => {if(confirm("Bạn có chắc chắn muốn hủy lượt đấu giá của người này không?")) handleAction(`/api/commissions/${c.id}/disqualify`);}} />
                     </>
                   )}
+                  <ActionButton 
+                    label="Xóa" 
+                    color="red" 
+                    disabled={c.status === 'active'}
+                    onClick={() => {
+                      if (confirm(`Bạn có chắc chắn muốn xóa "${c.title}" vĩnh viễn? Tất cả lịch sử đấu giá liên quan sẽ bị xóa sạch.`)) {
+                        handleAction(`/api/commissions/${c.id}`, 'DELETE');
+                      }
+                    }} 
+                  />
                 </div>
               </td>
             </tr>
@@ -512,6 +741,8 @@ function CommissionTable({ data, handleAction, pending, handleEditClick }) {
     </table>
   );
 }
+
+// Left unchanged to keep line count consistent
 
 function NavItem({ icon, label, active, onClick }) {
   return (
@@ -544,7 +775,7 @@ function StatusPill({ status }) {
   return <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tighter ${styles[status] || styles.upcoming}`}>{status}</span>;
 }
 
-function ActionButton({ label, color, onClick, isOverdue }) {
+function ActionButton({ label, color, onClick, isOverdue, disabled }) {
   const colors = {
     green: 'bg-green-500 hover:bg-green-600',
     black: 'bg-gray-900 hover:bg-black',
@@ -552,7 +783,20 @@ function ActionButton({ label, color, onClick, isOverdue }) {
     red: isOverdue ? 'bg-red-600 animate-pulse' : 'bg-red-400 hover:bg-red-500',
     orange: 'bg-orange-500 hover:bg-orange-600'
   };
-  return <button onClick={onClick} className={`${colors[color] || 'bg-indigo-600 hover:bg-indigo-700'} text-white px-4 py-2 rounded-xl text-[10px] font-black shadow-sm transition-all active:scale-95 uppercase tracking-wider`}>{label}</button>;
+  
+  const buttonClass = disabled 
+    ? 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none' 
+    : `${colors[color] || 'bg-indigo-600 hover:bg-indigo-700'} text-white active:scale-95`;
+    
+  return (
+    <button 
+      onClick={disabled ? null : onClick} 
+      disabled={disabled}
+      className={`${buttonClass} px-4 py-2 rounded-xl text-[10px] font-black shadow-sm transition-all uppercase tracking-wider`}
+    >
+      {label}
+    </button>
+  );
 }
 
 function Input({ label, ...props }) {

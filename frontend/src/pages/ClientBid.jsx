@@ -303,6 +303,8 @@ export default function ClientBid() {
   const [customBid, setCustomBid] = useState('');
   const [formData, setFormData] = useState({ fullName: '', contactInfo: '' });
 
+  const activeMomoPhone = commission?.momo_phone || MOMO_PHONE_NUMBER;
+
   // Theme & Mode states
   const [selectedThemeKey, setSelectedThemeKey] = useState('pink');
   const [showThemePanel, setShowThemePanel] = useState(false);
@@ -1232,10 +1234,10 @@ export default function ClientBid() {
               </p>
               
               <div className="max-w-2xl mx-auto flex flex-col md:flex-row gap-6 items-center justify-center mb-6">
-                {MOMO_PHONE_NUMBER ? (
+                {activeMomoPhone ? (
                   <div className="p-4 rounded-[2rem] shadow-lg border shrink-0 bg-white border-emerald-100 shadow-slate-100">
                     <img
-                      src={`https://img.vietqr.io/image/MBBANK-${MOMO_PHONE_NUMBER}-compact2.png?amount=${topBid.bid_amount / 2}&addInfo=Coc%2050%25%20Com%20${commission.title.replace(/ /g, '%20')}`}
+                      src={`https://img.vietqr.io/image/MBBANK-${activeMomoPhone}-compact2.png?amount=${topBid.bid_amount / 2}&addInfo=Coc%2050%25%20Com%20${commission.title.replace(/ /g, '%20')}`}
                       alt="VietQR"
                       className="w-48 h-48 sm:w-56 sm:h-56 object-contain mx-auto"
                     />
@@ -1262,11 +1264,11 @@ export default function ClientBid() {
                     <div className="flex justify-between items-center">
                       <div>
                         <span className="text-[10px] text-slate-400 font-bold block">Số tài khoản / MoMo:</span>
-                        <span className={`font-black text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{MOMO_PHONE_NUMBER || 'Chưa cấu hình'}</span>
+                        <span className={`font-black text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{activeMomoPhone || 'Chưa cấu hình'}</span>
                       </div>
-                      {MOMO_PHONE_NUMBER && (
+                      {activeMomoPhone && (
                         <button 
-                          onClick={() => handleCopy(MOMO_PHONE_NUMBER, 'Số tài khoản')}
+                          onClick={() => handleCopy(activeMomoPhone, 'Số tài khoản')}
                           className={`text-xs px-3 py-1.5 rounded-lg border font-bold transition-all active:scale-95 ${
                             isDarkMode ? 'bg-white/5 border-white/10 text-white hover:bg-white/10' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
                           }`}
