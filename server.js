@@ -39,6 +39,9 @@ const server = http.createServer(app);
       )
     `);
     
+    // Migration: Add paypal_email column if it doesn't exist
+    await client.query('ALTER TABLE settings ADD COLUMN IF NOT EXISTS paypal_email VARCHAR(255)');
+    
     // Seed settings table if empty
     const checkSettings = await client.query('SELECT COUNT(*) FROM settings');
     if (parseInt(checkSettings.rows[0].count) === 0) {
@@ -371,7 +374,7 @@ app.get('/api/admin/settings', authMiddleware, async (req, res, next) => {
   let client;
   try {
     client = await pool.connect();
-    const ans = await client.query('SELECT momo_phone, rule_payment, rule_disqualify, rule_usage FROM settings WHERE id = 1');
+    const ans = await client.query('SELECT momo_phone, paypal_email, rule_payment, rule_disqualify, rule_usage FROM settings WHERE id = 1');
     res.json(ans.rows[0] || {});
   } catch (e) {
     next(e);
@@ -381,15 +384,15 @@ app.get('/api/admin/settings', authMiddleware, async (req, res, next) => {
 });
 
 app.put('/api/admin/settings', authMiddleware, async (req, res, next) => {
-  const { momo_phone, rule_payment, rule_disqualify, rule_usage } = req.body;
+  const { momo_phone, paypal_email, rule_payment, rule_disqualify, rule_usage } = req.body;
   let client;
   try {
     client = await pool.connect();
     await client.query(`
       UPDATE settings 
-      SET momo_phone = $1, rule_payment = $2, rule_disqualify = $3, rule_usage = $4
+      SET momo_phone = $1, paypal_email = $2, rule_payment = $3, rule_disqualify = $4, rule_usage = $5
       WHERE id = 1
-    `, [momo_phone, rule_payment, rule_disqualify, rule_usage]);
+    `, [momo_phone, paypal_email, rule_payment, rule_disqualify, rule_usage]);
     notifyAll();
     res.json({ success: true });
   } catch (e) {
@@ -553,11 +556,12 @@ app.get('/api/commissions/active', async (req, res, next) => {
     `);
     if (ans.rows.length === 0) return res.status(404).json({ message: 'Trống' });
     
-    // Get dynamic momo_phone from settings
-    const settingsRes = await client.query('SELECT momo_phone FROM settings WHERE id = 1');
+    // Get dynamic momo_phone and paypal_email from settings
+    const settingsRes = await client.query('SELECT momo_phone, paypal_email FROM settings WHERE id = 1');
     const momo_phone = settingsRes.rows[0]?.momo_phone || process.env.VITE_MOMO_PHONE || '';
+    const paypal_email = settingsRes.rows[0]?.paypal_email || '';
     
-    res.json({ ...ans.rows[0], momo_phone, usd_vnd_rate: usdVndRate, server_now: new Date().toISOString() });
+    res.json({ ...ans.rows[0], momo_phone, paypal_email, usd_vnd_rate: usdVndRate, server_now: new Date().toISOString() });
   } catch (e) {
     next(e);
   } finally {

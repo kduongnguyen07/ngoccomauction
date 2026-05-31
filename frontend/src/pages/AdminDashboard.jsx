@@ -40,6 +40,7 @@ export default function AdminDashboard() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [settingsData, setSettingsData] = useState({
     momoPhone: '',
+    paypalEmail: '',
     rulePayment: '',
     ruleDisqualify: '',
     ruleUsage: ''
@@ -134,6 +135,7 @@ export default function AdminDashboard() {
         const settingsJson = await resSettings.json();
         setSettingsData({
           momoPhone: settingsJson.momo_phone || '',
+          paypalEmail: settingsJson.paypal_email || '',
           rulePayment: settingsJson.rule_payment || '',
           ruleDisqualify: settingsJson.rule_disqualify || '',
           ruleUsage: settingsJson.rule_usage || ''
@@ -321,6 +323,7 @@ export default function AdminDashboard() {
           e.preventDefault();
           await handleAction('/api/admin/settings', 'PUT', {
             momo_phone: settingsData.momoPhone,
+            paypal_email: settingsData.paypalEmail,
             rule_payment: settingsData.rulePayment,
             rule_disqualify: settingsData.ruleDisqualify,
             rule_usage: settingsData.ruleUsage
@@ -331,6 +334,12 @@ export default function AdminDashboard() {
             placeholder="VD: 0961234567" 
             value={settingsData.momoPhone} 
             onChange={e => setSettingsData({...settingsData, momoPhone: e.target.value})} 
+          />
+          <Input 
+            label="Tài khoản PayPal (Chờ/Dự phòng)" 
+            placeholder="VD: email_paypal@example.com" 
+            value={settingsData.paypalEmail || ''} 
+            onChange={e => setSettingsData({...settingsData, paypalEmail: e.target.value})} 
           />
           <Input 
             label="Luật thanh toán mặc định" 

@@ -304,7 +304,9 @@ export default function ClientBid() {
   const [formData, setFormData] = useState({ fullName: '', contactInfo: '' });
 
   const activeMomoPhone = commission?.momo_phone || MOMO_PHONE_NUMBER;
+  const activePaypalEmail = commission?.paypal_email || '';
 
+  const [paymentMethod, setPaymentMethod] = useState('bank'); // 'bank' or 'paypal'
   const [usdVndRate, setUsdVndRate] = useState(25000); // default fallback
 
   const formatUSD = (vndAmount) => {
@@ -1260,24 +1262,63 @@ export default function ClientBid() {
             }`}>
               <h3 className={`text-2xl sm:text-5xl font-black tracking-tighter mb-4 ${isDarkMode ? 'text-emerald-400' : 'text-emerald-700'}`}>🎉 CHÚC MỪNG BẠN ĐÃ CHIẾN THẮNG!</h3>
               <p className={`font-semibold text-sm sm:text-lg mb-6 sm:mb-8 max-w-xl mx-auto ${isDarkMode ? 'text-emerald-300' : 'text-slate-700'}`}>
-                Chúc mừng bạn đã trúng đấu giá! Vui lòng quét mã QR chuyển khoản bên dưới hoặc sử dụng thông tin chuyển khoản để đặt cọc trước 50% số tiền đặt cọc trong vòng 24 giờ nhé.
+                Chúc mừng bạn đã trúng đấu giá! Vui lòng chọn phương thức thanh toán bên dưới và hoàn tất đặt cọc trước 50% số tiền đấu giá trong vòng 24 giờ nhé.
               </p>
               
+              {/* Payment Method Switcher */}
+              <div className="flex justify-center gap-3 mb-6 max-w-md mx-auto">
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('bank')}
+                  className={`flex-1 py-3 px-4 rounded-2xl font-bold border transition-all text-xs sm:text-sm active:scale-95 flex items-center justify-center gap-2 ${
+                    paymentMethod === 'bank'
+                      ? (isDarkMode ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300' : 'bg-emerald-600 text-white border-emerald-600')
+                      : (isDarkMode ? 'bg-black/25 border-white/5 text-slate-400 hover:text-white' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50')
+                  }`}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  Chuyển Khoản / MoMo
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('paypal')}
+                  className={`flex-1 py-3 px-4 rounded-2xl font-bold border transition-all text-xs sm:text-sm active:scale-95 flex items-center justify-center gap-2 ${
+                    paymentMethod === 'paypal'
+                      ? (isDarkMode ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300' : 'bg-indigo-600 text-white border-indigo-600')
+                      : (isDarkMode ? 'bg-black/25 border-white/5 text-slate-400 hover:text-white' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50')
+                  }`}
+                >
+                  <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944 3.399C5.037 2.81 5.545 2.4 6.14 2.4h7.525c3.543 0 5.617 1.636 6.166 4.858.337 1.97-.058 3.75-1.18 5.088-1.077 1.285-2.73 1.96-4.912 2.033l-.22.002H9.865a.642.642 0 0 0-.632.535l-.946 5.766a.64.64 0 0 1-.611.531v-.036zm8.106-11.233c.097-.58-.337-1.104-.925-1.104H8.79a.434.434 0 0 0-.427.362l-.744 4.544c-.024.148.09.282.24.282h1.666c1.378 0 2.457-.184 3.208-.546.75-.363 1.196-.92 1.327-1.706a2.124 2.124 0 0 0 .122-.832z"/></svg>
+                  PayPal (USD)
+                </button>
+              </div>
+
               <div className="max-w-2xl mx-auto flex flex-col md:flex-row gap-6 items-center justify-center mb-6">
-                {activeMomoPhone ? (
-                  <div className="p-4 rounded-[2rem] shadow-lg border shrink-0 bg-white border-emerald-100 shadow-slate-100">
-                    <img
-                      src={`https://img.vietqr.io/image/MBBANK-${activeMomoPhone}-compact2.png?amount=${topBid.bid_amount / 2}&addInfo=Coc%2050%25%20Com%20${commission.title.replace(/ /g, '%20')}`}
-                      alt="VietQR"
-                      className="w-48 h-48 sm:w-56 sm:h-56 object-contain mx-auto"
-                    />
+                {paymentMethod === 'paypal' ? (
+                  <div className={`p-6 rounded-[2rem] border shrink-0 flex flex-col items-center justify-center w-48 h-48 sm:w-56 sm:h-56 ${
+                    isDarkMode ? 'bg-slate-900/60 border-white/5' : 'bg-white border-slate-200/80 shadow-sm'
+                  }`}>
+                    <div className="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center mb-3">
+                      <svg className="w-8 h-8 text-indigo-600 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944 3.399C5.037 2.81 5.545 2.4 6.14 2.4h7.525c3.543 0 5.617 1.636 6.166 4.858.337 1.97-.058 3.75-1.18 5.088-1.077 1.285-2.73 1.96-4.912 2.033l-.22.002H9.865a.642.642 0 0 0-.632.535l-.946 5.766a.64.64 0 0 1-.611.531v-.036zm8.106-11.233c.097-.58-.337-1.104-.925-1.104H8.79a.434.434 0 0 0-.427.362l-.744 4.544c-.024.148.09.282.24.282h1.666c1.378 0 2.457-.184 3.208-.546.75-.363 1.196-.92 1.327-1.706a2.124 2.124 0 0 0 .122-.832z"/></svg>
+                    </div>
+                    <span className={`text-[10px] font-black tracking-wider uppercase ${isDarkMode ? 'text-indigo-400' : 'text-indigo-600'}`}>PayPal Payment</span>
                   </div>
                 ) : (
-                  <div className={`border-2 p-4 rounded-2xl ${
-                    isDarkMode ? 'bg-yellow-950/40 border-yellow-500/30 text-yellow-300' : 'bg-yellow-50 border-yellow-450 text-yellow-800'
-                  }`}>
-                    ⚠️ Không tìm thấy SĐT MoMo/STK mặc định. Vui lòng liên hệ Admin.
-                  </div>
+                  activeMomoPhone ? (
+                    <div className="p-4 rounded-[2rem] shadow-lg border shrink-0 bg-white border-emerald-100 shadow-slate-100">
+                      <img
+                        src={`https://img.vietqr.io/image/MBBANK-${activeMomoPhone}-compact2.png?amount=${topBid.bid_amount / 2}&addInfo=Coc%2050%25%20Com%20${commission.title.replace(/ /g, '%20')}`}
+                        alt="VietQR"
+                        className="w-48 h-48 sm:w-56 sm:h-56 object-contain mx-auto"
+                      />
+                    </div>
+                  ) : (
+                    <div className={`border-2 p-4 rounded-2xl ${
+                      isDarkMode ? 'bg-yellow-950/40 border-yellow-500/30 text-yellow-300' : 'bg-yellow-50 border-yellow-450 text-yellow-800'
+                    }`}>
+                      ⚠️ Không tìm thấy SĐT MoMo/STK mặc định. Vui lòng liên hệ Admin.
+                    </div>
+                  )
                 )}
 
                 <div className="flex-1 w-full text-left space-y-3">
@@ -1288,59 +1329,117 @@ export default function ClientBid() {
                     <span className="text-xl sm:text-2xl font-black tracking-wider text-rose-500 animate-pulse">{payTimeLeft}</span>
                   </div>
 
-                  <div className={`p-4 rounded-2xl border space-y-3.5 transition-colors duration-500 ${
-                    isDarkMode ? 'bg-black/25 border-white/5' : 'bg-white border-slate-100 shadow-sm'
-                  }`}>
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <span className="text-[10px] text-slate-400 font-bold block">Số tài khoản / MoMo:</span>
-                        <span className={`font-black text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{activeMomoPhone || 'Chưa cấu hình'}</span>
+                  {paymentMethod === 'paypal' ? (
+                    <div className={`p-4 rounded-2xl border space-y-3.5 transition-colors duration-500 ${
+                      isDarkMode ? 'bg-black/25 border-white/5' : 'bg-white border-slate-100 shadow-sm'
+                    }`}>
+                      <div className="flex justify-between items-center">
+                        <div className="mr-2">
+                          <span className="text-[10px] text-slate-400 font-bold block">Tài khoản PayPal (Email):</span>
+                          <span className={`font-black text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-slate-900'} break-all`}>
+                            {activePaypalEmail || 'Chưa thiết lập (Vui lòng liên hệ Admin)'}
+                          </span>
+                        </div>
+                        {activePaypalEmail && (
+                          <button 
+                            onClick={() => handleCopy(activePaypalEmail, 'Tài khoản PayPal')}
+                            className={`text-xs px-3 py-1.5 rounded-lg border font-bold transition-all active:scale-95 shrink-0 ${
+                              isDarkMode ? 'bg-white/5 border-white/10 text-white hover:bg-white/10' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                            }`}
+                          >
+                            Copy
+                          </button>
+                        )}
                       </div>
-                      {activeMomoPhone && (
+
+                      <div className="flex justify-between items-center border-t border-dashed border-slate-800/10 pt-2">
+                        <div>
+                          <span className="text-[10px] text-slate-400 font-bold block">Số tiền cọc USD (50%):</span>
+                          <span className="font-black text-sm sm:text-base text-rose-500">
+                            ${((parseFloat(topBid.bid_amount) / 2) / usdVndRate).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+                            <span className="text-xs font-bold opacity-80 ml-1.5">/ {((parseFloat(topBid.bid_amount) / 2)).toLocaleString('vi-VN')} đ</span>
+                          </span>
+                        </div>
                         <button 
-                          onClick={() => handleCopy(activeMomoPhone, 'Số tài khoản')}
+                          onClick={() => handleCopy(((parseFloat(topBid.bid_amount) / 2) / usdVndRate).toFixed(2), 'Số tiền cọc USD')}
                           className={`text-xs px-3 py-1.5 rounded-lg border font-bold transition-all active:scale-95 ${
                             isDarkMode ? 'bg-white/5 border-white/10 text-white hover:bg-white/10' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
                           }`}
                         >
                           Copy
                         </button>
-                      )}
-                    </div>
-
-                    <div className="flex justify-between items-center border-t border-dashed border-slate-800/10 pt-2">
-                      <div>
-                        <span className="text-[10px] text-slate-400 font-bold block">Số tiền cần đặt cọc (50%):</span>
-                        <span className="font-black text-sm sm:text-base text-rose-500">
-                          {(parseFloat(topBid.bid_amount) / 2).toLocaleString('vi-VN')} đ
-                          {usdVndRate && <span className="text-xs font-bold opacity-80 ml-1.5">/ {formatUSD(parseFloat(topBid.bid_amount) / 2)}</span>}
-                        </span>
                       </div>
-                      <button 
-                        onClick={() => handleCopy((parseFloat(topBid.bid_amount) / 2).toString(), 'Số tiền cọc')}
-                        className={`text-xs px-3 py-1.5 rounded-lg border font-bold transition-all active:scale-95 ${
-                          isDarkMode ? 'bg-white/5 border-white/10 text-white hover:bg-white/10' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
-                        }`}
-                      >
-                        Copy
-                      </button>
-                    </div>
 
-                    <div className="flex justify-between items-center border-t border-dashed border-slate-800/10 pt-2">
-                      <div>
-                        <span className="text-[10px] text-slate-400 font-bold block">Nội dung chuyển khoản:</span>
-                        <span className={`font-black text-xs sm:text-sm ${isDarkMode ? 'text-slate-200' : 'text-slate-805'}`}>Coc 50% Com {commission.title}</span>
+                      <div className="flex justify-between items-center border-t border-dashed border-slate-800/10 pt-2">
+                        <div>
+                          <span className="text-[10px] text-slate-400 font-bold block">Ghi chú giao dịch (Note):</span>
+                          <span className={`font-black text-xs sm:text-sm ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>Coc 50% Com {commission.title}</span>
+                        </div>
+                        <button 
+                          onClick={() => handleCopy(`Coc 50% Com ${commission.title}`, 'Ghi chú')}
+                          className={`text-xs px-3 py-1.5 rounded-lg border font-bold transition-all active:scale-95 ${
+                            isDarkMode ? 'bg-white/5 border-white/10 text-white hover:bg-white/10' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                          }`}
+                        >
+                          Copy
+                        </button>
                       </div>
-                      <button 
-                        onClick={() => handleCopy(`Coc 50% Com ${commission.title}`, 'Nội dung')}
-                        className={`text-xs px-3 py-1.5 rounded-lg border font-bold transition-all active:scale-95 ${
-                          isDarkMode ? 'bg-white/5 border-white/10 text-white hover:bg-white/10' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
-                        }`}
-                      >
-                        Copy
-                      </button>
                     </div>
-                  </div>
+                  ) : (
+                    <div className={`p-4 rounded-2xl border space-y-3.5 transition-colors duration-500 ${
+                      isDarkMode ? 'bg-black/25 border-white/5' : 'bg-white border-slate-100 shadow-sm'
+                    }`}>
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <span className="text-[10px] text-slate-400 font-bold block">Số tài khoản / MoMo:</span>
+                          <span className={`font-black text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{activeMomoPhone || 'Chưa cấu hình'}</span>
+                        </div>
+                        {activeMomoPhone && (
+                          <button 
+                            onClick={() => handleCopy(activeMomoPhone, 'Số tài khoản')}
+                            className={`text-xs px-3 py-1.5 rounded-lg border font-bold transition-all active:scale-95 ${
+                              isDarkMode ? 'bg-white/5 border-white/10 text-white hover:bg-white/10' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                            }`}
+                          >
+                            Copy
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="flex justify-between items-center border-t border-dashed border-slate-800/10 pt-2">
+                        <div>
+                          <span className="text-[10px] text-slate-400 font-bold block">Số tiền cần đặt cọc (50%):</span>
+                          <span className="font-black text-sm sm:text-base text-rose-500">
+                            {(parseFloat(topBid.bid_amount) / 2).toLocaleString('vi-VN')} đ
+                            {usdVndRate && <span className="text-xs font-bold opacity-80 ml-1.5">/ {formatUSD(parseFloat(topBid.bid_amount) / 2)}</span>}
+                          </span>
+                        </div>
+                        <button 
+                          onClick={() => handleCopy((parseFloat(topBid.bid_amount) / 2).toString(), 'Số tiền cọc')}
+                          className={`text-xs px-3 py-1.5 rounded-lg border font-bold transition-all active:scale-95 ${
+                            isDarkMode ? 'bg-white/5 border-white/10 text-white hover:bg-white/10' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                          }`}
+                        >
+                          Copy
+                        </button>
+                      </div>
+
+                      <div className="flex justify-between items-center border-t border-dashed border-slate-800/10 pt-2">
+                        <div>
+                          <span className="text-[10px] text-slate-400 font-bold block">Nội dung chuyển khoản:</span>
+                          <span className={`font-black text-xs sm:text-sm ${isDarkMode ? 'text-slate-200' : 'text-slate-805'}`}>Coc 50% Com {commission.title}</span>
+                        </div>
+                        <button 
+                          onClick={() => handleCopy(`Coc 50% Com ${commission.title}`, 'Nội dung')}
+                          className={`text-xs px-3 py-1.5 rounded-lg border font-bold transition-all active:scale-95 ${
+                            isDarkMode ? 'bg-white/5 border-white/10 text-white hover:bg-white/10' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                          }`}
+                        >
+                          Copy
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
